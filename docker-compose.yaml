@@ -1,0 +1,43 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - mongo-data:/data/db
+
+  mongo-init-replica:
+    image: mongo:latest
+    container_name: mongo-init-replica
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    entrypoint: >
+      mongosh --host mongodb --eval
+      "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb:27017' }] }) }"
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      mongo-init-replica:
+        condition: service_completed_successfully
+
+volumes:
+  mongo-data:

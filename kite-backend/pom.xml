@@ -29,6 +29,7 @@
     <properties>
         <java.version>21</java.version>
         <spring-modulith.version>2.1.0</spring-modulith.version>
+        <flamingockVersion>1.4.4</flamingockVersion>
     </properties>
     <dependencies>
         <dependency>
@@ -38,10 +39,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mongodb</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -128,6 +125,33 @@
             <artifactId>spring-modulith-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.flamingock</groupId>
+            <artifactId>flamingock-core</artifactId>
+            <version>${flamingockVersion}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.flamingock</groupId>
+            <artifactId>flamingock-community</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.flamingock</groupId>
+            <artifactId>flamingock-mongodb-sync-auditstore</artifactId>
+            <version>1.4.4</version>
+        </dependency>
+        <dependency>
+            <groupId>io.flamingock</groupId>
+            <artifactId>flamingock-springboot-integration</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.flamingock</groupId>
+            <artifactId>flamingock-mongodb-springdata-targetsystem</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.flamingock</groupId>
+            <artifactId>flamingock-mongodb-sync-auditstore</artifactId>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -135,6 +159,13 @@
                 <groupId>org.springframework.modulith</groupId>
                 <artifactId>spring-modulith-bom</artifactId>
                 <version>${spring-modulith.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.flamingock</groupId>
+                <artifactId>flamingock-bom</artifactId>
+                <version>${flamingockVersion}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -158,38 +189,20 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <path>
-                                    <groupId>org.projectlombok</groupId>
-                                    <artifactId>lombok</artifactId>
-                                </path>
-                            </annotationProcessorPaths>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>default-testCompile</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <path>
-                                    <groupId>org.projectlombok</groupId>
-                                    <artifactId>lombok</artifactId>
-                                </path>
-                            </annotationProcessorPaths>
-                        </configuration>
-                    </execution>
-                </executions>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>io.flamingock</groupId>
+                            <artifactId>flamingock-processor</artifactId>
+                            <version>${flamingockVersion}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
             </plugin>
         </plugins>
     </build>
