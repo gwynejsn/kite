@@ -1,4 +1,4 @@
-package com.gwynejsn.kite;
+package com.gwynejsn.kite.shared.config;
  
 import io.flamingock.internal.core.external.store.CommunityAuditStore;
 import io.flamingock.store.mongodb.sync.MongoDBSyncAuditStore;

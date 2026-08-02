@@ -1,5 +1,7 @@
 package com.gwynejsn.kite.security.application;
 
+import com.gwynejsn.kite.security.application.dto.CreateUserResponse;
+import com.gwynejsn.kite.security.application.dto.LoginUserResponse;
 import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;
 import com.gwynejsn.kite.security.infrastructure.CustomUserDetails;
@@ -24,10 +26,5 @@ public class UserDetailsServiceImp implements UserDetailsService {
         if (user.isPresent()) {
             return CustomUserDetails.builder().user(user.get()).build();
         } else throw new UsernameNotFoundException(email);
-    }
-
-    public CreateUserResponse createUser(User user) {
-        User userCreated = userRepo.save(user);
-        return new CreateUserResponse(userCreated.getId(), "User " + userCreated.getEmail() + " created");
     }
 }
