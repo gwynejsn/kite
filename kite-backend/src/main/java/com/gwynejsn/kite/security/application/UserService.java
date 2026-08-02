@@ -3,12 +3,12 @@ package com.gwynejsn.kite.security.application;
 import com.gwynejsn.kite.security.application.dto.LoginUserRequest;
 import com.gwynejsn.kite.security.application.dto.LoginUserResponse;
 import com.gwynejsn.kite.security.domain.User;
+import com.gwynejsn.kite.security.infrastructure.JwtService;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;
-import com.gwynejsn.kite.shared.exceptions.UserNotFoundException;
+import com.gwynejsn.kite.security.application.exceptions.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 

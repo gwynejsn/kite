@@ -1,5 +1,6 @@
 package com.gwynejsn.kite.security.domain;
 
+import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.enums.Role;
 import lombok.Getter;
 import org.springframework.data.annotation.Id;
@@ -34,6 +35,19 @@ public class User {
 
         User user = new User();
         user.id = new UserId();
+        user.email = email.toLowerCase().trim();
+        user.password = passwordHash;
+        user.roles.add(Role.USER); // Default role
+        return user;
+    }
+
+    public static User create(UserId id, String email, String passwordHash) {
+        Assert.notNull(id, "UserId is required");
+        Assert.hasText(email, "Email is required");
+        Assert.hasText(passwordHash, "Password hash is required");
+
+        User user = new User();
+        user.id = id;
         user.email = email.toLowerCase().trim();
         user.password = passwordHash;
         user.roles.add(Role.USER); // Default role
