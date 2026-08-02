@@ -3,6 +3,7 @@ package com.gwynejsn.kite.profile.application;
 import com.gwynejsn.kite.profile.application.dto.UserProfileResponse;
 import com.gwynejsn.kite.profile.domain.UserProfile;
 import com.gwynejsn.kite.profile.infrastructure.UserProfileRepo;
+import com.gwynejsn.kite.security.application.exceptions.UserNotFoundException;
 import com.gwynejsn.kite.shared.security.AuthenticatedUser;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.enums.Role;
@@ -26,10 +27,13 @@ public class UserProfileService {
             userToGet = userId;
         }
 
-        UserProfile userProfileFound = userProfileRepo.findUserProfileByUserId(userToGet);
+        UserProfile userProfileFound = userProfileRepo
+                .findUserProfileByUserId(userToGet)
+                .orElseThrow(() -> new UserNotFoundException("User " + userId + " not found"));
 
         return UserProfileResponse
                 .builder()
+                .userId(userProfileFound.getUserId().id().toString())
                 .bio(userProfileFound.getBio())
                 .firstName(userProfileFound.getFirstName())
                 .lastName(userProfileFound.getLastName())
