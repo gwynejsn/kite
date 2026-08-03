@@ -2,6 +2,7 @@ package com.gwynejsn.kite.security.infrastructure;
 
 import com.gwynejsn.kite.security.application.UserDetailsServiceImp;
 import com.gwynejsn.kite.shared.domain.UserId;
+import com.gwynejsn.kite.shared.enums.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -46,7 +47,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/auth/**", "/error").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/user-profile").hasAnyAuthority("USER", "ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/user-profile").hasAnyRole(Role.USER.toString(), Role.ADMIN.toString())
                                 .anyRequest().authenticated()
                 );
         return http.build();

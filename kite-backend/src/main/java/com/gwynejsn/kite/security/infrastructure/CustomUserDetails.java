@@ -24,6 +24,7 @@ public class CustomUserDetails implements AuthenticatedUser {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return user.getRoles().stream()
                 .map(Role::toString)
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                 .map(SimpleGrantedAuthority::new)
                 .toList();
     }
