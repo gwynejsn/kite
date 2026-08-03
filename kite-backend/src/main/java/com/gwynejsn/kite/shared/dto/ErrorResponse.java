@@ -3,10 +3,13 @@ package com.gwynejsn.kite.shared.dto;
 import lombok.Builder;
 import org.springframework.http.HttpStatusCode;
 
+import java.time.Instant;
+
 @Builder
 public record ErrorResponse(
-        String errorMessage,
-        String exceptionClass,
-        HttpStatusCode statusCode
+        Instant timestamp,
+        HttpStatusCode httpStatusCode,
+        String message,
+        String path
 ) {
 }

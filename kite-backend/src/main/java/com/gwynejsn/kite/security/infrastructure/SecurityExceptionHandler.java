@@ -1,30 +1,28 @@
-package com.gwynejsn.kite.shared.infrastructure;
+package com.gwynejsn.kite.security.infrastructure;
 
+import com.gwynejsn.kite.security.infrastructure.exceptions.InvalidTokenException;
 import com.gwynejsn.kite.shared.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
-            HttpMessageNotReadableException ex,
-            HttpServletRequest request
-    ) {
+public class SecurityExceptionHandler {
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTokenException(InvalidTokenException ex, HttpServletRequest request) {
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(HttpStatus.UNAUTHORIZED)
                 .body(
                         ErrorResponse
                                 .builder()
-                                .httpStatusCode(HttpStatus.BAD_REQUEST)
-                                .message("Invalid request body")
+                                .message("The provided JWT token is invalid or expired")
                                 .path(request.getRequestURI())
+                                .httpStatusCode(HttpStatus.UNAUTHORIZED)
                                 .timestamp(Instant.now())
                                 .build()
                 );
