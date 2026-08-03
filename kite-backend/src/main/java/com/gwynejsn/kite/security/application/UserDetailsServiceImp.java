@@ -1,7 +1,5 @@
 package com.gwynejsn.kite.security.application;
 
-import com.gwynejsn.kite.security.application.dto.CreateUserResponse;
-import com.gwynejsn.kite.security.application.dto.LoginUserResponse;
 import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;
 import com.gwynejsn.kite.security.infrastructure.CustomUserDetails;
