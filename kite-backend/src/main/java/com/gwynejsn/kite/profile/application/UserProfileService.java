@@ -63,4 +63,8 @@ public class UserProfileService {
         userProfileRepo.save(userProfileFound);
         return INSTANCE.toUserProfileResponse(userProfileFound);
     }
+
+    public void createUserProfile(UserProfile userProfile) {
+        userProfileRepo.save(userProfile);
+    }
 }

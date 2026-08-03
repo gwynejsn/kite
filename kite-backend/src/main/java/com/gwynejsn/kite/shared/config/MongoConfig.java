@@ -1,6 +1,8 @@
 package com.gwynejsn.kite.shared.config;
 
 import com.gwynejsn.kite.shared.interfaces.DomainId;
+import org.bson.UuidRepresentation;
+import org.springframework.boot.mongodb.autoconfigure.MongoClientSettingsBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -54,5 +56,10 @@ public class MongoConfig {
                 }
             };
         }
+    }
+
+    @Bean
+    public MongoClientSettingsBuilderCustomizer uuidCustomizer() {
+        return builder -> builder.uuidRepresentation(UuidRepresentation.STANDARD);
     }
 }
