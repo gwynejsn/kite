@@ -1,5 +1,6 @@
 package com.gwynejsn.kite.security.infrastructure;
 
+import com.gwynejsn.kite.security.infrastructure.exceptions.AccountDisabledException;
 import com.gwynejsn.kite.security.infrastructure.exceptions.InvalidTokenException;
 import com.gwynejsn.kite.shared.dto.ErrorResponse;
 import com.gwynejsn.kite.security.application.exceptions.UserAlreadyExistsException;
@@ -8,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -17,7 +19,7 @@ import java.time.Instant;
 @RestControllerAdvice
 public class SecurityExceptionHandler {
 
-    @ExceptionHandler(InvalidTokenException.class)
+    @ExceptionHandler({InvalidTokenException.class})
     public ResponseEntity<ErrorResponse> handleInvalidTokenException(InvalidTokenException ex, HttpServletRequest request) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
@@ -25,6 +27,21 @@ public class SecurityExceptionHandler {
                         ErrorResponse
                                 .builder()
                                 .message("The provided JWT token is invalid or expired")
+                                .path(request.getRequestURI())
+                                .httpStatusCode(HttpStatus.UNAUTHORIZED)
+                                .timestamp(Instant.now())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler({BadCredentialsException.class})
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(
+                        ErrorResponse
+                                .builder()
+                                .message("The username or password is incorrect")
                                 .path(request.getRequestURI())
                                 .httpStatusCode(HttpStatus.UNAUTHORIZED)
                                 .timestamp(Instant.now())
@@ -81,6 +98,21 @@ public class SecurityExceptionHandler {
                                 .message("A user with this email or username already exists.")
                                 .path(request.getRequestURI())
                                 .httpStatusCode(HttpStatus.CONFLICT)
+                                .timestamp(Instant.now())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler({AccountDisabledException.class})
+    public ResponseEntity<ErrorResponse> handleAccountDisabledException(AccountDisabledException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(
+                        ErrorResponse
+                                .builder()
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .httpStatusCode(HttpStatus.UNAUTHORIZED)
                                 .timestamp(Instant.now())
                                 .build()
                 );

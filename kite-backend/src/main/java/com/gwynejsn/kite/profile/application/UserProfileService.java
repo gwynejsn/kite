@@ -28,7 +28,8 @@ public class UserProfileService {
 
     public UserProfileResponse getUserProfile(UserId userId, AuthenticatedUser userDetails) {
         boolean isAdmin = userDetails.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals(Role.ADMIN.name()));
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_" + Role.ADMIN.name())
+                        || auth.getAuthority().equals(Role.ADMIN.name()));
 
         UserId userToGet = userDetails.getUserId();
 
@@ -66,5 +67,11 @@ public class UserProfileService {
 
     public void createUserProfile(UserProfile userProfile) {
         userProfileRepo.save(userProfile);
+     }
+ 
+    @Transactional
+    public void deleteUserProfile(UserId userId) {
+        log.info("Deleting user profile for userId: {}", userId);
+        userProfileRepo.deleteUserProfileByUserId(userId);
     }
-}
+ }

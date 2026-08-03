@@ -5,12 +5,15 @@ import com.gwynejsn.kite.security.application.dto.LoginUserRequest;
 import com.gwynejsn.kite.security.application.dto.LoginUserResponse;
 import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.domain.events.UserRegisteredEvent;
+import com.gwynejsn.kite.security.domain.events.UserDeletedEvent;
 import com.gwynejsn.kite.security.infrastructure.JwtService;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;
 import com.gwynejsn.kite.security.application.exceptions.UserNotFoundException;
 import com.gwynejsn.kite.security.application.exceptions.UserAlreadyExistsException;
+import com.gwynejsn.kite.security.infrastructure.exceptions.AccountDisabledException;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.enums.Role;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +27,7 @@ import java.util.Set;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class AuthService {
     private final UserRepo userRepo;
     private final AuthenticationManager authenticationManager;
@@ -40,6 +44,7 @@ public class AuthService {
     }
 
     public LoginUserResponse loginUser(LoginUserRequest loginUserRequest) throws UserNotFoundException, AuthenticationException {
+        log.info("Login user request: {}", loginUserRequest);
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginUserRequest.email(),
@@ -49,6 +54,8 @@ public class AuthService {
         User user = userRepo
                 .findUserByEmail(loginUserRequest.email())
                 .orElseThrow(() -> new UserNotFoundException(loginUserRequest.email() + " not found."));
+//        if (!user.isEnabled()) throw new AccountDisabledException(loginUserRequest.email() + " is disabled.");
+        log.info("Logged in user: {}", user);
         String jwtToken = jwtService.generateToken(user.getEmail());
         return LoginUserResponse.builder().jwtToken(jwtToken).statusCode(HttpStatus.OK).build();
     }

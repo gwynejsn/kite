@@ -5,6 +5,7 @@ import com.gwynejsn.kite.profile.application.dto.UpdateUserProfileRequest;
 import com.gwynejsn.kite.profile.application.dto.UserProfileResponse;
 import com.gwynejsn.kite.shared.security.AuthenticatedUser;
 import com.gwynejsn.kite.shared.domain.UserId;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/user-profile")
+@Slf4j
 public class UserProfileController {
 
     private final UserProfileService userProfileService;
@@ -34,6 +36,7 @@ public class UserProfileController {
             @RequestParam(required = false) UserId userId,
             @AuthenticationPrincipal AuthenticatedUser currentUserDetails
     ) {
+        log.debug("Get user profile");
         return ResponseEntity.ok(
                 userProfileService.getUserProfile(userId, currentUserDetails)
         );

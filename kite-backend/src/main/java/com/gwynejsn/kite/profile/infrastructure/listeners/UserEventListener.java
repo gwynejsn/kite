@@ -4,6 +4,7 @@ import com.gwynejsn.kite.profile.application.UserProfileService;
 import com.gwynejsn.kite.profile.domain.UserProfile;
 import com.gwynejsn.kite.profile.domain.UserProfileId;
 import com.gwynejsn.kite.security.domain.events.UserRegisteredEvent;
+import com.gwynejsn.kite.security.domain.events.UserDeletedEvent;
 import com.gwynejsn.kite.shared.enums.PreferredTheme;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -11,10 +12,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class UserRegisteredEventListener {
+public class UserEventListener {
     private final UserProfileService userProfileService;
 
-    public UserRegisteredEventListener(UserProfileService userProfileService) {
+    public UserEventListener(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
 
@@ -37,5 +38,15 @@ public class UserRegisteredEventListener {
                 .build();
         userProfileService.createUserProfile(profile);
         log.info("Created user profile: {}", profile);
+    }
+
+    /**
+     * Also delete the user profile when the user has been deleted
+     * @param event
+     */
+    @ApplicationModuleListener
+    public void onUserDeletedEvent(UserDeletedEvent event) {
+        userProfileService.deleteUserProfile(event.userId());
+        log.info("Deleted user profile for userId: {}", event.userId());
     }
 }

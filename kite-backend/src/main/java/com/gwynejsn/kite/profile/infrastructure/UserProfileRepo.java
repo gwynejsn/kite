@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface UserProfileRepo extends MongoRepository<UserProfile, UUID> {
     Optional<UserProfile> findUserProfileByUserId(UserId userId);
+    void deleteUserProfileByUserId(UserId userId);
 }

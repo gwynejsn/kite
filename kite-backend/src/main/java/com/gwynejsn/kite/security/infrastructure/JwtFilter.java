@@ -12,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -71,7 +72,7 @@ public class JwtFilter extends OncePerRequestFilter {
                     return;
                 }
             }
-        } catch (JwtException | IllegalArgumentException ex) {
+        } catch (JwtException | UsernameNotFoundException | IllegalArgumentException ex) {
             log.error("JWT verification failed: {}", ex.getMessage());
             resolver.resolveException(request, response, null, new InvalidTokenException("Invalid or corrupted JWT token: " + ex.getMessage()));
             return;
