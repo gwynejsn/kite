@@ -1,4 +1,4 @@
-package com.gwynejsn.kite.changes;
+package com.gwynejsn.kite.security.changes;
 
 import io.flamingock.api.annotations.Apply;
 import io.flamingock.api.annotations.Change;
