@@ -2,7 +2,7 @@ package com.gwynejsn.kite.profile.web;
 
 import com.gwynejsn.kite.profile.application.UserProfileService;
 import com.gwynejsn.kite.profile.application.dto.UpdateUserProfileRequest;
-import com.gwynejsn.kite.profile.application.dto.UserProfileResponse;
+import com.gwynejsn.kite.profile.api.UserProfileResponse;
 import com.gwynejsn.kite.shared.security.AuthenticatedUser;
 import com.gwynejsn.kite.shared.domain.UserId;
 import lombok.extern.slf4j.Slf4j;
@@ -24,9 +24,8 @@ public class UserProfileController {
     }
 
     /**
-     * If user, get own profile.
-     * If admin with no specified userId, get own profile
-     * If admin with specified userId, get that specific userId's user profile
+     * If no specified userId, get own profile
+     * If with specified userId, get that specific userId's user profile
      * @param userId
      * @param currentUserDetails
      * @return A specific user profile
@@ -38,8 +37,9 @@ public class UserProfileController {
     ) {
         log.debug("Get user profile");
         return ResponseEntity.ok(
-                userProfileService.getUserProfile(userId, currentUserDetails)
-        );
+                userProfileService.getUserProfile(
+                        (userId != null ? userId : currentUserDetails.getUserId())
+                ));
     }
 
     /**

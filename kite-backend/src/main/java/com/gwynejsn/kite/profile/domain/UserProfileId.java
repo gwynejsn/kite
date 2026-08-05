@@ -1,7 +1,6 @@
 package com.gwynejsn.kite.profile.domain;
 
-import com.gwynejsn.kite.shared.interfaces.DomainId;
-import lombok.Builder;
+import com.gwynejsn.kite.shared.domain.DomainId;
 import org.springframework.util.Assert;
 
 import java.util.UUID;

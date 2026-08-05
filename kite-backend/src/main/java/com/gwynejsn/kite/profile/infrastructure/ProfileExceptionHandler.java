@@ -3,7 +3,7 @@ package com.gwynejsn.kite.profile.infrastructure;
 
 import com.gwynejsn.kite.profile.application.exceptions.UserIdNotSpecifiedException;
 import com.gwynejsn.kite.profile.application.exceptions.UserProfileNotFoundException;
-import com.gwynejsn.kite.shared.dto.ErrorResponse;
+import com.gwynejsn.kite.security.api.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

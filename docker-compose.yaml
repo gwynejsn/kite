@@ -39,5 +39,19 @@ services:
       mongo-init-replica:
         condition: service_completed_successfully
 
+  rabbitmq:
+    image: rabbitmq:4.0-management-alpine
+    hostname: kite-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "61613:61613"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - ./kite-backend/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+
+
 volumes:
   mongo-data:

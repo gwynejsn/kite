@@ -1,6 +1,6 @@
 package com.gwynejsn.kite.conversation.domain;
 
-import com.gwynejsn.kite.shared.interfaces.DomainId;
+import com.gwynejsn.kite.shared.domain.DomainId;
 import org.springframework.util.Assert;
 
 import java.util.UUID;

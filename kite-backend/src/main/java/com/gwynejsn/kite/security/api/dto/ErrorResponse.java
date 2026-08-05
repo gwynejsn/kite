@@ -1,4 +1,4 @@
-package com.gwynejsn.kite.shared.dto;
+package com.gwynejsn.kite.security.api.dto;
 
 import lombok.Builder;
 import org.springframework.http.HttpStatusCode;
