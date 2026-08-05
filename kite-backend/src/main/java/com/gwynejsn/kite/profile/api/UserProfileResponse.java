@@ -1,4 +1,4 @@
-package com.gwynejsn.kite.profile.application.dto;
+package com.gwynejsn.kite.profile.api;
 
 import com.gwynejsn.kite.shared.enums.Gender;
 import com.gwynejsn.kite.shared.enums.PreferredTheme;

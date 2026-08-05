@@ -28,7 +28,6 @@ import java.util.UUID;
 @EnableWebSecurity(debug = true)
 @EnableMethodSecurity
 public class SecurityConfig {
-    // TODO: implement jwt later or oAuth for security
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -47,6 +46,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/auth/login", "/auth/sign-up", "/error").permitAll()
+                                .requestMatchers("/ws-connect", "/ws-connect/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/user-profile").hasAnyRole("USER", "ADMIN")
                                 .anyRequest().authenticated()
                 );

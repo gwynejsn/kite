@@ -1,7 +1,7 @@
 package com.gwynejsn.kite.profile.infrastructure;
 
 import com.gwynejsn.kite.profile.application.dto.UpdateUserProfileRequest;
-import com.gwynejsn.kite.profile.application.dto.UserProfileResponse;
+import com.gwynejsn.kite.profile.api.UserProfileResponse;
 import com.gwynejsn.kite.profile.domain.UserProfile;
 import com.gwynejsn.kite.shared.domain.UserId;
 import org.mapstruct.Mapper;
@@ -20,13 +20,11 @@ public interface UserProfileMapper {
     UserProfileResponse toUserProfileResponse(UserProfile userProfile);
 
     /**
+     * refer to mapstruct docs: 3.3. Adding custom methods to mappers
      * @param userId
      * @return userId in string format
      */
     default String map(UserId userId) {
-        if (userId == null) {
-            return null;
-        }
-        return userId.id().toString();
+        return userId == null ? null : userId.id().toString();
     }
 }

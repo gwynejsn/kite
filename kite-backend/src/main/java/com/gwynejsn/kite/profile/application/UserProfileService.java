@@ -1,13 +1,14 @@
 package com.gwynejsn.kite.profile.application;
 
+import com.gwynejsn.kite.profile.api.UserProfileServiceApi;
 import com.gwynejsn.kite.profile.application.dto.UpdateUserProfileRequest;
-import com.gwynejsn.kite.profile.application.dto.UserProfileResponse;
+import com.gwynejsn.kite.profile.api.UserProfileResponse;
 import com.gwynejsn.kite.profile.application.exceptions.UserProfileNotFoundException;
 import com.gwynejsn.kite.profile.domain.UserProfile;
 import com.gwynejsn.kite.profile.infrastructure.UserProfileRepo;
 import com.gwynejsn.kite.shared.security.AuthenticatedUser;
 import com.gwynejsn.kite.shared.domain.UserId;
-import com.gwynejsn.kite.shared.enums.Role;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -19,28 +20,15 @@ import static com.gwynejsn.kite.profile.infrastructure.UserProfileMapper.INSTANC
 
 @Service
 @Slf4j
-public class UserProfileService {
+@RequiredArgsConstructor
+public class UserProfileService implements UserProfileServiceApi {
     private final UserProfileRepo userProfileRepo;
 
-    public UserProfileService(UserProfileRepo userProfileRepo) {
-        this.userProfileRepo = userProfileRepo;
-    }
-
-    public UserProfileResponse getUserProfile(UserId userId, AuthenticatedUser userDetails) {
-        boolean isAdmin = userDetails.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_" + Role.ADMIN.name())
-                        || auth.getAuthority().equals(Role.ADMIN.name()));
-
-        UserId userToGet = userDetails.getUserId();
-
-        if (userId != null && isAdmin) {
-            userToGet = userId;
-        }
-
-        log.debug("Get user profile for {}", userToGet);
+    public UserProfileResponse getUserProfile(UserId userId) {
+        log.debug("Get user profile for {}", userId);
 
         UserProfile userProfileFound = userProfileRepo
-                .findUserProfileByUserId(userToGet)
+                .findUserProfileByUserId(userId)
                 .orElseThrow(() -> new UserProfileNotFoundException("User " + userId + " not found"));
 
         return INSTANCE.toUserProfileResponse(userProfileFound);
@@ -67,11 +55,11 @@ public class UserProfileService {
 
     public void createUserProfile(UserProfile userProfile) {
         userProfileRepo.save(userProfile);
-     }
- 
+    }
+
     @Transactional
     public void deleteUserProfile(UserId userId) {
         log.info("Deleting user profile for userId: {}", userId);
         userProfileRepo.deleteUserProfileByUserId(userId);
     }
- }
+}

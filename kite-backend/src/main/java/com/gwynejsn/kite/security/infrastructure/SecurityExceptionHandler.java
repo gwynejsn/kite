@@ -2,7 +2,7 @@ package com.gwynejsn.kite.security.infrastructure;
 
 import com.gwynejsn.kite.security.infrastructure.exceptions.AccountDisabledException;
 import com.gwynejsn.kite.security.infrastructure.exceptions.InvalidTokenException;
-import com.gwynejsn.kite.shared.dto.ErrorResponse;
+import com.gwynejsn.kite.security.api.dto.ErrorResponse;
 import com.gwynejsn.kite.security.application.exceptions.UserAlreadyExistsException;
 import org.springframework.dao.DuplicateKeyException;
 import jakarta.servlet.http.HttpServletRequest;

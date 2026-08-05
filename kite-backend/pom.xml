@@ -140,7 +140,6 @@
         <dependency>
             <groupId>io.flamingock</groupId>
             <artifactId>flamingock-mongodb-sync-auditstore</artifactId>
-            <version>1.4.4</version>
         </dependency>
         <dependency>
             <groupId>io.flamingock</groupId>
@@ -149,10 +148,6 @@
         <dependency>
             <groupId>io.flamingock</groupId>
             <artifactId>flamingock-mongodb-springdata-targetsystem</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.flamingock</groupId>
-            <artifactId>flamingock-mongodb-sync-auditstore</artifactId>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -176,6 +171,21 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${org.mapstruct.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.amqp</groupId>
+            <artifactId>spring-rabbit</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
+        </dependency>
+<!--        this is needed for rabbitmq for some reason it throws an error without it for mac -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns-native-macos</artifactId>
+            <classifier>osx-aarch_64</classifier>
         </dependency>
     </dependencies>
     <dependencyManagement>

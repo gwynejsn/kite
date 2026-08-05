@@ -1,6 +1,6 @@
 package com.gwynejsn.kite.shared.config;
 
-import com.gwynejsn.kite.shared.interfaces.DomainId;
+import com.gwynejsn.kite.shared.domain.DomainId;
 import org.bson.UuidRepresentation;
 import org.springframework.boot.mongodb.autoconfigure.MongoClientSettingsBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +23,7 @@ public class MongoConfig {
      * a record of DomainId to a string and vice versa.
      * What is used here:
      *      https://docs.spring.io/spring-data/mongodb/reference/mongodb/mapping/custom-conversions.html
-     * were based on the core type-conversion engine that the base Spring Framework already provides:
+     * is based on the core type-conversion engine that the base Spring Framework already provides:
      *      https://docs.spring.io/spring-framework/reference/core/validation/convert.html
      */
     @Bean
@@ -57,6 +57,7 @@ public class MongoConfig {
             };
         }
     }
+
 
     @Bean
     public MongoClientSettingsBuilderCustomizer uuidCustomizer() {

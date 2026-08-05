@@ -1,4 +1,4 @@
-package com.gwynejsn.kite.shared.interfaces;
+package com.gwynejsn.kite.shared.domain;
 
 import java.util.UUID;
 
