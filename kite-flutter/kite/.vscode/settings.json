@@ -1,0 +1,8 @@
+{
+  "cmake.ignoreCMakeListsMissing": true,
+  "cSpell.words": [
+    "appbar",
+    "gwyne"
+  ],
+  "java.configuration.updateBuildConfiguration": "automatic"
+}
