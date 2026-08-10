@@ -3,7 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:kite/core/authentication_exception.dart';
+import 'package:kite/core/exceptions/authentication_exception.dart';
+import 'package:kite/features/auth/data/dto/register_request.dart';
 
 class AuthDataSource {
   final http.Client client;
@@ -33,7 +34,36 @@ class AuthDataSource {
 
       return result;
     } on SocketException {
-      throw AuthenticationException('Cannot connect to server. Please check your backend connection.', 0);
+      throw AuthenticationException(
+        'Cannot connect to server. Please check your backend connection.',
+        0,
+      );
+    } on FormatException {
+      throw AuthenticationException('Invalid response format from server', 500);
+    }
+  }
+
+  Future<String> register(RegisterRequest registerRequest) async {
+    try {
+      final response = await client.post(
+        Uri.parse('$baseUrl/sign-up'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(registerRequest.toJson()),
+      );
+
+      // since the api returns only a string if success, check first if ok
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.body;
+      } else {
+        final Map<String, dynamic> errorResult = jsonDecode(response.body);
+        final errorMessage = errorResult['message'] ?? 'Registration failed';
+        throw AuthenticationException(errorMessage, response.statusCode);
+      }
+    } on SocketException {
+      throw AuthenticationException(
+        'Cannot connect to server. Please check your backend connection.',
+        0,
+      );
     } on FormatException {
       throw AuthenticationException('Invalid response format from server', 500);
     }
