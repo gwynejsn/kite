@@ -8,6 +8,7 @@ import 'package:kite/features/auth/presentation/controllers/login_controller.dar
 import 'package:kite/features/auth/presentation/controllers/login_state.dart';
 import 'package:kite/features/auth/presentation/screens/register_page.dart';
 import 'package:kite/features/auth/presentation/widgets/logo_header.dart';
+import 'package:kite/features/conversation/presentation/screens/conversation_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -48,12 +49,9 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (state.isSuccess && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Login successful! Welcome back.'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          behavior: SnackBarBehavior.floating,
-        ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ConversationPage()),
       );
     }
   }
@@ -93,7 +91,9 @@ class _LoginPageState extends State<LoginPage> {
           // image overlay
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF022C22).withValues(alpha: 0.65),
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.50),
             ),
           ),
 
@@ -117,14 +117,14 @@ class _LoginPageState extends State<LoginPage> {
                             vertical: 24.0,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF06372B,
-                            ).withValues(alpha: 0.4),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface.withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: const Color(
-                                0xFF10B981,
-                              ).withValues(alpha: 0.2),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.2),
                               width: 1.5,
                             ),
                           ),
