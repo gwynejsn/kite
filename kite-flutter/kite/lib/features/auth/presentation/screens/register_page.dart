@@ -1,9 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:kite/features/auth/data/datasources/auth_data_source.dart';
-import 'package:kite/features/auth/data/repositories/auth_repository_imp.dart';
+import 'package:kite/core/di/injection_container.dart';
 import 'package:kite/features/auth/presentation/controllers/register_controller.dart';
 import 'package:kite/features/auth/presentation/controllers/register_state.dart';
 import 'package:kite/features/auth/presentation/screens/login_page.dart';
@@ -33,10 +31,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    final authDataSource = AuthDataSource(http.Client());
-    final authRepository = AuthRepositoryImpl(authDataSource);
-    _registerController = RegisterController(authRepository);
-
+    _registerController = sl<RegisterController>();
     _registerWidgets = [
       RegisterCredentials(controller: _registerController),
       RegisterProfileDetails(controller: _registerController),
