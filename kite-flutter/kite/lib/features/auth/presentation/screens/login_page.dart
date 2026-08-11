@@ -1,9 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:kite/features/auth/data/datasources/auth_data_source.dart';
-import 'package:kite/features/auth/data/repositories/auth_repository_imp.dart';
+import 'package:kite/core/di/injection_container.dart';
+import 'package:kite/core/security/encryption_service.dart';
 import 'package:kite/features/auth/presentation/controllers/login_controller.dart';
 import 'package:kite/features/auth/presentation/controllers/login_state.dart';
 import 'package:kite/features/auth/presentation/screens/register_page.dart';
@@ -28,11 +27,10 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    final authDataSource = AuthDataSource(http.Client());
-    final authRepository = AuthRepositoryImpl(authDataSource);
-    _loginController = LoginController(authRepository);
-
+    _loginController = sl<LoginController>();
     _loginController.addListener(_onStateChanged);
+    // test
+    sl<EncryptionService>().initAndGetPublicKey();
   }
 
   void _onStateChanged() {

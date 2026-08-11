@@ -1,35 +1,28 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:kite/core/networks/jwt_service.dart';
 import 'package:kite/features/auth/data/datasources/auth_data_source.dart';
 import 'package:kite/features/auth/data/dto/register_request.dart';
 import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final AuthDataSource authDataSource;
-  final FlutterSecureStorage _flutterSecureStorage;
+  final AuthDataSource _authDataSource;
+  final JwtService _jwtService;
 
-  AuthRepositoryImpl(this.authDataSource)
-    : _flutterSecureStorage = FlutterSecureStorage();
+  AuthRepositoryImpl(this._authDataSource, this._jwtService);
 
   @override
   Future<void> login({required String email, required String password}) async {
-    final Map<String, dynamic> result = await authDataSource.login(
+    final Map<String, dynamic> result = await _authDataSource.login(
       email,
       password,
     );
 
     final String? token = result['jwtToken'] as String?;
-    _saveToken(token);
+    _jwtService.saveToken(token);
   }
 
   @override
   Future<void> register(RegisterRequest registerRequest) async {
-    String? token = await authDataSource.register(registerRequest);
-    _saveToken(token);
-  }
-
-  void _saveToken(String? jwt) {
-    if (jwt != null && jwt.isNotEmpty) {
-      _flutterSecureStorage.write(key: 'jwt', value: jwt);
-    }
+    String? token = await _authDataSource.register(registerRequest);
+    _jwtService.saveToken(token);
   }
 }
