@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:kite/core/exceptions/authentication_exception.dart';
 import 'package:kite/features/auth/data/dto/register_request.dart';
+import 'package:kite/shared/exceptions/authentication_exception.dart';
 
 class AuthDataSource {
   final http.Client client;

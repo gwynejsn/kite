@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:kite/core/security/encryption_service.dart';
+import 'package:kite/shared/security/encryption_service.dart';
 
 class SimpleE2eeService implements EncryptionService {
   // X25519 is an Elliptic Curve Diffie-Hellman (ECDH)
@@ -93,13 +93,15 @@ class SimpleE2eeService implements EncryptionService {
   }
 
   Future<SimpleKeyPair> _loadLocalKeyPair() async {
-    final privateKeyBase64 = await _secureStorage.read(
-      key: _privateKeyStorageKey,
-    );
+    final privateKeyBase64 = await _getPrivateKey();
     if (privateKeyBase64 == null) {
       throw Exception('No private key found on device.');
     }
     final seed = base64Decode(privateKeyBase64);
     return await _keyAlgorithm.newKeyPairFromSeed(seed);
+  }
+
+  Future<String?> _getPrivateKey() {
+    return _secureStorage.read(key: _privateKeyStorageKey);
   }
 }

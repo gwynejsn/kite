@@ -56,6 +56,7 @@ public class AuthService {
         if (userRepo.findUserByEmail(user.email()).isPresent()) {
             throw new UserAlreadyExistsException("A user with email " + user.email() + " already exists.");
         }
+        log.info("Signing up user with public key: {}", user.publicKey());
 
         User userCreated = userRepo.save(
                 User
@@ -63,6 +64,7 @@ public class AuthService {
                         .id(new UserId())
                         .email(user.email())
                         .password(passwordEncoder.encode(user.password()))
+                        .publicKey(user.publicKey())
                         .roles(Set.of(Role.USER))
                         .build()
 

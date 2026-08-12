@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:kite/core/enums/gender.dart';
 import 'package:kite/features/auth/presentation/controllers/register_controller.dart';
+import 'package:kite/shared/enums/gender.dart';
 
 class RegisterProfileDetails extends StatefulWidget {
   final RegisterController controller;
 
-  const RegisterProfileDetails({
-    super.key,
-    required this.controller,
-  });
+  const RegisterProfileDetails({super.key, required this.controller});
 
   @override
   State<RegisterProfileDetails> createState() => _RegisterProfileDetailsState();
@@ -72,7 +69,8 @@ class _RegisterProfileDetailsState extends State<RegisterProfileDetails> {
               }
               return null;
             },
-            onSaved: (value) => widget.controller.updateFirstName(value?.trim() ?? ''),
+            onSaved: (value) =>
+                widget.controller.updateFirstName(value?.trim() ?? ''),
           ),
           const SizedBox(height: 16),
 
@@ -98,7 +96,8 @@ class _RegisterProfileDetailsState extends State<RegisterProfileDetails> {
               }
               return null;
             },
-            onSaved: (value) => widget.controller.updateLastName(value?.trim() ?? ''),
+            onSaved: (value) =>
+                widget.controller.updateLastName(value?.trim() ?? ''),
           ),
           const SizedBox(height: 16),
 
@@ -171,10 +170,7 @@ class _RegisterProfileDetailsState extends State<RegisterProfileDetails> {
                   onPressed: _submitForm,
                   child: const Text(
                     'Continue',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

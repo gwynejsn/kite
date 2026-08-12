@@ -1,6 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:kite/core/exceptions/authentication_exception.dart';
-import 'package:kite/core/networks/jwt_service.dart';
+import 'package:kite/shared/exceptions/authentication_exception.dart';
+import 'package:kite/shared/networks/jwt_service.dart';
 
 class JwtServiceImp implements JwtService {
   final FlutterSecureStorage _flutterSecureStorage;

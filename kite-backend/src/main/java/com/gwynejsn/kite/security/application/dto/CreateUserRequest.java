@@ -9,6 +9,7 @@ public record CreateUserRequest(
         String lastName,
         String profileImageLink,
         String bio,
-        Gender gender
+        Gender gender,
+        String publicKey
 ) {
 }
