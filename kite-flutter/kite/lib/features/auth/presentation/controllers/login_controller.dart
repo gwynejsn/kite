@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:kite/core/exceptions/authentication_exception.dart';
 import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kite/shared/exceptions/authentication_exception.dart';
 
 import 'login_state.dart';
 

@@ -1,13 +1,12 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:kite/core/di/injection_container.dart';
-import 'package:kite/core/security/encryption_service.dart';
 import 'package:kite/features/auth/presentation/controllers/login_controller.dart';
 import 'package:kite/features/auth/presentation/controllers/login_state.dart';
 import 'package:kite/features/auth/presentation/screens/register_page.dart';
 import 'package:kite/features/auth/presentation/widgets/logo_header.dart';
 import 'package:kite/features/conversation/presentation/screens/conversation_page.dart';
+import 'package:kite/shared/di/injection_container.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -29,8 +28,6 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _loginController = sl<LoginController>();
     _loginController.addListener(_onStateChanged);
-    // test
-    sl<EncryptionService>().initAndGetPublicKey();
   }
 
   void _onStateChanged() {

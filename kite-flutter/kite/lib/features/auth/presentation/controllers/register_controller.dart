@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:kite/core/enums/gender.dart';
-import 'package:kite/core/exceptions/authentication_exception.dart';
 import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kite/features/auth/presentation/controllers/register_state.dart';
+import 'package:kite/shared/enums/gender.dart';
+import 'package:kite/shared/exceptions/authentication_exception.dart';
 
 class RegisterController extends ValueNotifier<RegisterState> {
   final AuthRepository _authRepository;

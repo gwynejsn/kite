@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:kite/core/di/injection_container.dart';
 import 'package:kite/features/auth/presentation/controllers/register_controller.dart';
 import 'package:kite/features/auth/presentation/controllers/register_state.dart';
 import 'package:kite/features/auth/presentation/screens/login_page.dart';
@@ -10,6 +9,7 @@ import 'package:kite/features/auth/presentation/widgets/register_credentials.dar
 import 'package:kite/features/auth/presentation/widgets/register_profile_details.dart';
 import 'package:kite/features/auth/presentation/widgets/step_progress_header.dart';
 import 'package:kite/features/conversation/presentation/screens/conversation_page.dart';
+import 'package:kite/shared/di/injection_container.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});

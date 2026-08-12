@@ -30,36 +30,14 @@ public class User {
 
     private String password;
 
+    private String publicKey;
+
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
     @Builder.Default
     private boolean enabled = true;
 
-    public static User create(String email, String passwordHash) {
-        Assert.hasText(email, "Email is required");
-        Assert.hasText(passwordHash, "Password hash is required");
-
-        User user = new User();
-        user.id = new UserId();
-        user.email = email.toLowerCase().trim();
-        user.password = passwordHash;
-        user.roles.add(Role.USER); // Default role
-        return user;
-    }
-
-    public static User create(UserId id, String email, String passwordHash) {
-        Assert.notNull(id, "UserId is required");
-        Assert.hasText(email, "Email is required");
-        Assert.hasText(passwordHash, "Password hash is required");
-
-        User user = new User();
-        user.id = id;
-        user.email = email.toLowerCase().trim();
-        user.password = passwordHash;
-        user.roles.add(Role.USER); // Default role
-        return user;
-    }
 
     public void changePassword(String newPasswordHash) {
         Assert.hasText(newPasswordHash, "New password hash cannot be empty");

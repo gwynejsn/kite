@@ -1,4 +1,4 @@
-import 'package:kite/core/enums/gender.dart';
+import 'package:kite/shared/enums/gender.dart';
 
 class RegisterRequest {
   final String email;
@@ -8,6 +8,7 @@ class RegisterRequest {
   final String profileImageLink;
   final String bio;
   final Gender gender;
+  final String publicKey;
 
   const RegisterRequest({
     this.email = '',
@@ -17,6 +18,7 @@ class RegisterRequest {
     this.profileImageLink = '',
     this.bio = '',
     this.gender = Gender.other,
+    this.publicKey = '',
   });
 
   Map<String, dynamic> toJson() {
@@ -28,6 +30,7 @@ class RegisterRequest {
       'profileImageLink': profileImageLink,
       'bio': bio,
       'gender': gender.name.toUpperCase(),
+      'publicKey': publicKey,
     };
   }
 
@@ -39,6 +42,7 @@ class RegisterRequest {
     String? profileImageLink,
     String? bio,
     Gender? gender,
+    String? publicKey,
   }) {
     return RegisterRequest(
       email: email ?? this.email,
@@ -48,6 +52,7 @@ class RegisterRequest {
       profileImageLink: profileImageLink ?? this.profileImageLink,
       bio: bio ?? this.bio,
       gender: gender ?? this.gender,
+      publicKey: publicKey ?? this.publicKey,
     );
   }
 }
