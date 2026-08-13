@@ -26,4 +26,10 @@ public class AccountService {
         eventPublisher.publishEvent(new UserDeletedEvent(userId));
         log.info("User " + userId + " has been deleted.");
     }
+
+    public String getUserPublicKey(UserId userId) {
+        return userRepo.findUserById(userId)
+                .map(User::getPublicKey)
+                .orElseThrow(() -> new UserNotFoundException("User " + userId + " not found."));
+    }
 }
