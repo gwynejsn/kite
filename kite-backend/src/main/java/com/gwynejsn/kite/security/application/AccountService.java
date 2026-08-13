@@ -1,6 +1,6 @@
 package com.gwynejsn.kite.security.application;
 
-import com.gwynejsn.kite.security.application.exceptions.UserNotFoundException;
+import com.gwynejsn.kite.shared.exceptions.UserNotFoundException;
 import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.domain.events.UserDeletedEvent;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;

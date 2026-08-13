@@ -24,6 +24,43 @@ class Conversation {
     required this.updatedAt,
   });
 
+  static String _parseId(dynamic obj) {
+    if (obj is Map) {
+      return obj['id']?.toString() ?? '';
+    }
+    return obj?.toString() ?? '';
+  }
+
+  static Set<String> _parseIdSet(dynamic list) {
+    if (list is List) {
+      return list.map((item) => _parseId(item)).where((id) => id.isNotEmpty).toSet();
+    }
+    return {};
+  }
+
+  factory Conversation.fromJson(Map<String, dynamic> json) {
+    return Conversation(
+      id: _parseId(json['id']),
+      type: ConversationType.values.firstWhere(
+        (t) => t.name.toUpperCase() == (json['type'] as String?).toString().toUpperCase(),
+        orElse: () => ConversationType.direct,
+      ),
+      name: json['name'] as String?,
+      conversationPhoto: json['conversationPhoto'] as String?,
+      memberIds: _parseIdSet(json['memberIds']),
+      adminIds: _parseIdSet(json['adminIds']),
+      lastMessage: json['lastMessage'] != null
+          ? LastMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
+          : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
+
   Conversation copyWith({
     String? id,
     ConversationType? type,

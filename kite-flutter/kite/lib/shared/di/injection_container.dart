@@ -1,10 +1,18 @@
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
-import 'package:kite/features/auth/data/datasources/auth_data_source.dart';
+import 'package:kite/features/auth/data/datasources/auth_datasource.dart';
 import 'package:kite/features/auth/data/repositories/auth_repository_imp.dart';
 import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kite/features/auth/presentation/controllers/login_controller.dart';
 import 'package:kite/features/auth/presentation/controllers/register_controller.dart';
+import 'package:kite/features/conversation/data/datasources/conversation_datasource.dart';
+import 'package:kite/features/conversation/data/repositories/conversation_repository_impl.dart';
+import 'package:kite/features/conversation/domain/repositories/conversation_repository.dart';
+import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
+import 'package:kite/features/social/data/datasources/social_datasource.dart';
+import 'package:kite/features/social/data/repositories/social_repository_impl.dart';
+import 'package:kite/features/social/domain/repositories/social_repository.dart';
+import 'package:kite/features/social/presentation/controllers/social_controller.dart';
 import 'package:kite/shared/networks/jwt_service.dart';
 import 'package:kite/shared/networks/jwt_service_imp.dart';
 import 'package:kite/shared/security/encryption_service.dart';
@@ -31,11 +39,35 @@ void initDependencies() {
     ),
   );
 
+  sl.registerLazySingleton<ConversationDatasource>(
+    () => ConversationDatasource(sl<http.Client>(), sl<JwtService>()),
+  );
+
+  sl.registerLazySingleton<ConversationRepository>(
+    () => ConversationRepositoryImpl(sl<ConversationDatasource>()),
+  );
+
+  sl.registerLazySingleton<SocialDatasource>(
+    () => SocialDatasource(sl<http.Client>(), sl<JwtService>()),
+  );
+
+  sl.registerLazySingleton<SocialRepository>(
+    () => SocialRepositoryImpl(sl<SocialDatasource>()),
+  );
+
   sl.registerFactory<LoginController>(
     () => LoginController(sl<AuthRepository>()),
   );
 
   sl.registerFactory<RegisterController>(
     () => RegisterController(sl<AuthRepository>()),
+  );
+
+  sl.registerFactory<ConversationController>(
+    () => ConversationController(sl<ConversationRepository>()),
+  );
+
+  sl.registerFactory<SocialController>(
+    () => SocialController(sl<SocialRepository>()),
   );
 }

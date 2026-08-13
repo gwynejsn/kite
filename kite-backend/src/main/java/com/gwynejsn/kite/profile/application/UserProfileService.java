@@ -27,11 +27,20 @@ public class UserProfileService implements UserProfileServiceApi {
     public UserProfileResponse getUserProfile(UserId userId) {
         log.debug("Get user profile for {}", userId);
 
-        UserProfile userProfileFound = userProfileRepo
+        return userProfileRepo
                 .findUserProfileByUserId(userId)
+                .map(INSTANCE::toUserProfileResponse)
                 .orElseThrow(() -> new UserProfileNotFoundException("User " + userId + " not found"));
 
-        return INSTANCE.toUserProfileResponse(userProfileFound);
+    }
+
+    @Override
+    public List<UserProfileResponse> getUserProfiles(UserId currentId) {
+        return userProfileRepo
+                .findAll()
+                .stream()
+                .map(INSTANCE::toUserProfileResponse)
+                .toList();
     }
 
     @PreAuthorize("hasRole('ADMIN')")

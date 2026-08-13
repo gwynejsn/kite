@@ -39,6 +39,7 @@ dependencies:
   http: ^1.6.0
   flutter_secure_storage: ^11.0.0
   get_it: ^9.2.1
+  provider: ^6.1.5+1
 
 dev_dependencies:
   flutter_test:
