@@ -1,4 +1,4 @@
-package com.gwynejsn.kite.security.application.exceptions;
+package com.gwynejsn.kite.shared.exceptions;
 
 public class UserNotFoundException extends RuntimeException {
     public UserNotFoundException(String message) {

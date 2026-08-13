@@ -5,8 +5,10 @@ import 'package:kite/features/auth/presentation/controllers/login_controller.dar
 import 'package:kite/features/auth/presentation/controllers/login_state.dart';
 import 'package:kite/features/auth/presentation/screens/register_page.dart';
 import 'package:kite/features/auth/presentation/widgets/logo_header.dart';
-import 'package:kite/features/conversation/presentation/screens/conversation_page.dart';
+import 'package:kite/features/main/presentation/screens/main_navigation_page.dart';
+import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -44,9 +46,11 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (state.isSuccess && mounted) {
-      Navigator.pushReplacement(
+      context.read<UserProfileProvider>().fetchUserProfile();
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const ConversationPage()),
+        MaterialPageRoute(builder: (context) => const MainNavigationPage()),
+        (route) => false,
       );
     }
   }

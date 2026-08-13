@@ -25,4 +25,11 @@ public class UserRelation {
     private RelationStatus status;
     private Instant createdAt;
     private Instant updatedAt;
+
+    public UserId getOtherUserId(UserId currentUserId) {
+        if (this.requesterId != null && this.requesterId.equals(currentUserId)) {
+            return this.addresseeId;
+        }
+        return this.requesterId;
+    }
 }

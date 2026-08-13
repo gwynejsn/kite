@@ -7,7 +7,7 @@ import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.domain.events.UserRegisteredEvent;
 import com.gwynejsn.kite.security.infrastructure.JwtService;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;
-import com.gwynejsn.kite.security.application.exceptions.UserNotFoundException;
+import com.gwynejsn.kite.shared.exceptions.UserNotFoundException;
 import com.gwynejsn.kite.security.application.exceptions.UserAlreadyExistsException;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.enums.Role;
@@ -74,7 +74,7 @@ public class AuthService {
                 .userId(userCreated.getId())
                 .firstName(user.firstName())
                 .lastName(user.lastName())
-                .username(user.email()) // default username is the email
+                .username(user.email().replace('@', '.')) // default username is the email but with a dot
                 .gender(user.gender())
                 .bio(user.bio())
                 .profileImageLink(user.profileImageLink())

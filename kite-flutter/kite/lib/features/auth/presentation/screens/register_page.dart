@@ -8,8 +8,10 @@ import 'package:kite/features/auth/presentation/widgets/register_bio_details.dar
 import 'package:kite/features/auth/presentation/widgets/register_credentials.dart';
 import 'package:kite/features/auth/presentation/widgets/register_profile_details.dart';
 import 'package:kite/features/auth/presentation/widgets/step_progress_header.dart';
-import 'package:kite/features/conversation/presentation/screens/conversation_page.dart';
+import 'package:kite/features/main/presentation/screens/main_navigation_page.dart';
+import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
+import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -55,9 +57,11 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (state.isSuccess && mounted) {
-      Navigator.pushReplacement(
+      context.read<UserProfileProvider>().fetchUserProfile();
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const ConversationPage()),
+        MaterialPageRoute(builder: (context) => const MainNavigationPage()),
+        (route) => false,
       );
     }
   }

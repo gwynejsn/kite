@@ -5,12 +5,17 @@ import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.security.AuthenticatedUser;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/conversation")
@@ -20,6 +25,16 @@ public class ConversationController {
 
     public ConversationController(ConversationService conversationService) {
         this.conversationService = conversationService;
+    }
+
+    /**
+     * Get all of current user's conversations
+     * @param authenticatedUser
+     * @return current user's conversations
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<ConversationResponse>> getConversations(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        return ResponseEntity.ok(conversationService.getAllConversations(authenticatedUser.getUserId()));
     }
 
     /**

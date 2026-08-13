@@ -1,5 +1,5 @@
 import 'package:flutter/rendering.dart';
-import 'package:kite/features/auth/data/datasources/auth_data_source.dart';
+import 'package:kite/features/auth/data/datasources/auth_datasource.dart';
 import 'package:kite/features/auth/data/dto/register_request.dart';
 import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kite/shared/networks/jwt_service.dart';
