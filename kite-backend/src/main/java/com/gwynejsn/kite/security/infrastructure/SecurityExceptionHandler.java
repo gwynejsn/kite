@@ -1,5 +1,7 @@
 package com.gwynejsn.kite.security.infrastructure;
 
+import com.gwynejsn.kite.security.application.exceptions.InvalidRefreshTokenException;
+import com.gwynejsn.kite.security.application.exceptions.RefreshTokenNotFoundException;
 import com.gwynejsn.kite.security.infrastructure.exceptions.AccountDisabledException;
 import com.gwynejsn.kite.security.infrastructure.exceptions.InvalidTokenException;
 import com.gwynejsn.kite.security.api.dto.ErrorResponse;
@@ -19,7 +21,37 @@ import java.time.Instant;
 @RestControllerAdvice
 public class SecurityExceptionHandler {
 
-    @ExceptionHandler({InvalidTokenException.class})
+    @ExceptionHandler(RefreshTokenNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRefreshTokenNotFoundException(RefreshTokenNotFoundException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(
+                        ErrorResponse
+                                .builder()
+                                .message("The provided refresh token is not found!")
+                                .path(request.getRequestURI())
+                                .httpStatusCode(HttpStatus.NOT_FOUND)
+                                .timestamp(Instant.now())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRefreshTokenException(InvalidRefreshTokenException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(
+                        ErrorResponse
+                                .builder()
+                                .message("The provided refresh token is invalid!")
+                                .path(request.getRequestURI())
+                                .httpStatusCode(HttpStatus.FORBIDDEN)
+                                .timestamp(Instant.now())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTokenException(InvalidTokenException ex, HttpServletRequest request) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
@@ -34,7 +66,7 @@ public class SecurityExceptionHandler {
                 );
     }
 
-    @ExceptionHandler({BadCredentialsException.class})
+    @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
@@ -103,7 +135,7 @@ public class SecurityExceptionHandler {
                 );
     }
 
-    @ExceptionHandler({AccountDisabledException.class})
+    @ExceptionHandler(AccountDisabledException.class)
     public ResponseEntity<ErrorResponse> handleAccountDisabledException(AccountDisabledException ex, HttpServletRequest request) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)

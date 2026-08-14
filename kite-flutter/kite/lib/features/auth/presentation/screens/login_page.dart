@@ -46,6 +46,8 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (state.isSuccess && mounted) {
+      debugPrint("is success in logging in");
+      // lazy load user profile
       context.read<UserProfileProvider>().fetchUserProfile();
       Navigator.pushAndRemoveUntil(
         context,

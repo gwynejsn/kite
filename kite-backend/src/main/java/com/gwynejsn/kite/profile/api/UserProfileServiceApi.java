@@ -5,6 +5,6 @@ import com.gwynejsn.kite.shared.domain.UserId;
 import java.util.List;
 
 public interface UserProfileServiceApi {
-    public UserProfileResponse getUserProfile(UserId userId);
-    public List<UserProfileResponse> getUserProfiles(UserId currentId);
+    UserProfileResponse getUserProfile(UserId userId);
+    List<UserProfileResponse> getUserProfiles(UserId currentId);
 }

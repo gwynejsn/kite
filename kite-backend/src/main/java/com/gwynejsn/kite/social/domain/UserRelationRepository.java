@@ -15,6 +15,9 @@ public interface UserRelationRepository extends MongoRepository<UserRelation, Re
     @Query("{ '$or': [ { 'requesterId': ?0, 'addresseeId': ?1 }, { 'requesterId': ?1, 'addresseeId': ?0 } ] }")
     Optional<UserRelation> findRelationBetween(UserId userA, UserId userB);
 
+    @Query("{ '$or': [ { 'requesterId': ?0 }, { 'addresseeId': ?0 } ] }")
+    List<UserRelation> findAllRelationsForUser(UserId userId);
+
     @Query("{ '$or': [ { 'requesterId': ?0, 'status': ?1 }, { 'addresseeId': ?0, 'status': ?1 } ] }")
     List<UserRelation> findAllRelationsByUserIdAndStatus(UserId userId, RelationStatus status);
 

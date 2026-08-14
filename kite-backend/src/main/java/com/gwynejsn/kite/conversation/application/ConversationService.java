@@ -82,7 +82,7 @@ public class ConversationService implements ConversationServiceApi {
     }
 
     /**
-     * Dynamically resolves name & photo for DIRECT chats based on currentUserId
+     * helper that resolves name & photo for DIRECT chats based on currentUserId
      */
     private ConversationResponse mapToResponse(Conversation conversation, UserId currentUserId) {
         ConversationResponse baseResponse = INSTANCE.toConversationResponse(conversation);
@@ -92,6 +92,8 @@ public class ConversationService implements ConversationServiceApi {
                     .filter(id -> !id.equals(currentUserId))
                     .findFirst();
 
+            // set the name and profile pic to the other member
+            // perhaps another alternative to this in the future is to store separately conversations for direct / one-on-one
             if (otherMember.isPresent()) {
                 try {
                     UserProfileResponse profile = userProfileService.getUserProfile(otherMember.get());

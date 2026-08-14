@@ -1,30 +1,19 @@
-import 'dart:convert';
-import 'dart:io';
-
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:kite/features/profile/domain/user_profile.dart';
-import 'package:kite/shared/networks/jwt_service.dart';
 
 class UserProfileProvider extends ChangeNotifier {
-  final http.Client _client;
-  final JwtService _jwtService;
+  final Dio _dio;
 
   UserProfile? _userProfile;
   bool _isLoading = false;
   String? _errorMessage;
 
-  UserProfileProvider(this._client, this._jwtService);
+  UserProfileProvider(this._dio);
 
   UserProfile? get userProfile => _userProfile;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:8080/kite/api/v1/user-profile';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8080/kite/api/v1/user-profile';
-    return 'http://localhost:8080/kite/api/v1/user-profile';
-  }
 
   Future<void> fetchUserProfile() async {
     _isLoading = true;
@@ -32,17 +21,10 @@ class UserProfileProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final token = await _jwtService.getToken();
-      final response = await _client.get(
-        Uri.parse(baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+      final response = await _dio.get('/user-profile');
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final Map<String, dynamic> data = response.data as Map<String, dynamic>;
         _userProfile = UserProfile.fromJson(data);
         _isLoading = false;
         _errorMessage = null;
@@ -52,9 +34,9 @@ class UserProfileProvider extends ChangeNotifier {
         _errorMessage = 'Failed to load user profile (${response.statusCode})';
         notifyListeners();
       }
-    } on SocketException {
+    } on DioException catch (e) {
       _isLoading = false;
-      _errorMessage = 'Cannot connect to server. Please check your backend connection.';
+      _errorMessage = _extractErrorMessage(e, fallback: 'Failed to load user profile');
       notifyListeners();
     } catch (e) {
       _isLoading = false;
@@ -72,5 +54,17 @@ class UserProfileProvider extends ChangeNotifier {
     _userProfile = null;
     _errorMessage = null;
     notifyListeners();
+  }
+
+  String _extractErrorMessage(DioException e, {required String fallback}) {
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError) {
+      return 'Cannot connect to server. Please check your backend connection.';
+    }
+    if (e.response?.data is Map && (e.response?.data as Map)['message'] != null) {
+      return (e.response?.data as Map)['message'].toString();
+    }
+    return fallback;
   }
 }

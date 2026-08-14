@@ -5,9 +5,8 @@ import com.gwynejsn.kite.shared.domain.UserId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public interface UserRepo extends MongoRepository<User, UUID> {
+public interface UserRepo extends MongoRepository<User, UserId> {
     Optional<User> findUserByEmail(String email);
     Optional<User> findUserById(UserId userId);
 }

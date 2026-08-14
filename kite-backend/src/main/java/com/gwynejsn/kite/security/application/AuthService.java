@@ -1,16 +1,18 @@
 package com.gwynejsn.kite.security.application;
 
 import com.gwynejsn.kite.security.application.dto.CreateUserRequest;
+import com.gwynejsn.kite.security.application.dto.GeneratedRefreshToken;
 import com.gwynejsn.kite.security.application.dto.LoginUserRequest;
 import com.gwynejsn.kite.security.application.dto.LoginUserResponse;
+import com.gwynejsn.kite.security.application.dto.RefreshTokenResponse;
+import com.gwynejsn.kite.security.application.exceptions.UserAlreadyExistsException;
 import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.domain.events.UserRegisteredEvent;
 import com.gwynejsn.kite.security.infrastructure.JwtService;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;
-import com.gwynejsn.kite.shared.exceptions.UserNotFoundException;
-import com.gwynejsn.kite.security.application.exceptions.UserAlreadyExistsException;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.enums.Role;
+import com.gwynejsn.kite.shared.exceptions.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,9 +33,11 @@ public class AuthService {
     private final UserRepo userRepo;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Transactional
     public LoginUserResponse loginUser(LoginUserRequest loginUserRequest) throws UserNotFoundException, AuthenticationException {
         log.info("Login user request: {}", loginUserRequest);
         authenticationManager.authenticate(
@@ -48,7 +52,8 @@ public class AuthService {
 
         log.info("Logged in user: {}", user);
         String jwtToken = jwtService.generateToken(user.getEmail());
-        return LoginUserResponse.builder().jwtToken(jwtToken).statusCode(HttpStatus.OK).build();
+        GeneratedRefreshToken generatedRefreshToken = refreshTokenService.generateRefreshToken(user.getId());
+        return LoginUserResponse.builder().token(jwtToken).refreshToken(generatedRefreshToken.rawToken()).statusCode(HttpStatus.OK).build();
     }
 
     @Transactional
@@ -81,5 +86,19 @@ public class AuthService {
                 .build()
         );
         return jwtService.generateToken(userCreated.getEmail());
+    }
+
+    @Transactional
+    public void logoutUser(String refreshToken) {
+        refreshTokenService.invalidateRefreshToken(refreshToken);
+    }
+
+    @Transactional
+    public RefreshTokenResponse refreshToken(String refreshToken) {
+        GeneratedRefreshToken rotated = refreshTokenService.rotateRefreshToken(refreshToken);
+        User user = userRepo.findUserById(rotated.entity().getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User not found for session"));
+        String newJwtToken = jwtService.generateToken(user.getEmail());
+        return RefreshTokenResponse.builder().token(newJwtToken).refreshToken(rotated.rawToken()).build();
     }
 }

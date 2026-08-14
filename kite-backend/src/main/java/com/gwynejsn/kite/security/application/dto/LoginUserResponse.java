@@ -4,4 +4,4 @@ import lombok.Builder;
 import org.springframework.http.HttpStatusCode;
 
 @Builder
-public record LoginUserResponse(String jwtToken, HttpStatusCode statusCode) { }
+public record LoginUserResponse(String token, String refreshToken, HttpStatusCode statusCode) { }

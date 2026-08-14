@@ -23,18 +23,32 @@ class AuthRepositoryImpl implements AuthRepository {
       password,
     );
 
-    final String? token = result['jwtToken'] as String?;
-    _jwtService.saveToken(token);
+    final String? token = result['token'] as String? ?? result['jwtToken'] as String?;
+    final String? refreshToken = result['refreshToken'] as String?;
+    await _jwtService.saveTokens(jwt: token, refreshToken: refreshToken);
   }
 
   @override
   Future<void> register(RegisterRequest registerRequest) async {
     final publicKeyGenerated = await _encryptionService.initAndGetPublicKey();
-    // add the public key
     debugPrint('this is my public key $publicKeyGenerated');
     String? token = await _authDataSource.register(
       registerRequest.copyWith(publicKey: publicKeyGenerated.toString()),
     );
-    _jwtService.saveToken(token);
+    await _jwtService.saveToken(token);
+  }
+
+  @override
+  Future<void> logout() async {
+    try {
+      final refreshToken = await _jwtService.getRefreshToken();
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await _authDataSource.logout(refreshToken);
+      }
+    } catch (e) {
+      debugPrint('Error revoking refresh token on logout: $e');
+    } finally {
+      await _jwtService.clearTokens();
+    }
   }
 }
