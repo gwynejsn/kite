@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +21,10 @@ import java.util.function.Function;
 public class JwtService {
     @Value("${jwt.secret.key}")
     private String SECRET;
+
+    // in minutes
+    @Value("${jwt.token.expiration}")
+    private long EXPIRATION_IN_MINUTES;
 
     public String generateToken(String email) {
         Map<String, Object> claims = new HashMap<>();
@@ -31,7 +37,7 @@ public class JwtService {
                 .setClaims(claims)
                 .setSubject(email)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30))
+                .setExpiration(Date.from(Instant.now().plus(EXPIRATION_IN_MINUTES, ChronoUnit.MINUTES)))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
     }
 

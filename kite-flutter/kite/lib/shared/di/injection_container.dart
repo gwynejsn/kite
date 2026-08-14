@@ -1,5 +1,5 @@
+import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
-import 'package:http/http.dart' as http;
 import 'package:kite/features/auth/data/datasources/auth_datasource.dart';
 import 'package:kite/features/auth/data/repositories/auth_repository_imp.dart';
 import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
@@ -13,6 +13,7 @@ import 'package:kite/features/social/data/datasources/social_datasource.dart';
 import 'package:kite/features/social/data/repositories/social_repository_impl.dart';
 import 'package:kite/features/social/domain/repositories/social_repository.dart';
 import 'package:kite/features/social/presentation/controllers/social_controller.dart';
+import 'package:kite/shared/networks/dio_client.dart';
 import 'package:kite/shared/networks/jwt_service.dart';
 import 'package:kite/shared/networks/jwt_service_imp.dart';
 import 'package:kite/shared/security/encryption_service.dart';
@@ -21,13 +22,14 @@ import 'package:kite/shared/security/simple_e2ee_service.dart';
 final sl = GetIt.instance;
 
 void initDependencies() {
-  sl.registerLazySingleton<http.Client>(() => http.Client());
+  sl.registerLazySingleton<JwtService>(() => JwtServiceImp());
+
+  sl.registerLazySingleton<DioClient>(() => DioClient(sl<JwtService>()));
+  sl.registerLazySingleton<Dio>(() => sl<DioClient>().dio);
 
   sl.registerLazySingleton<AuthDataSource>(
-    () => AuthDataSource(sl<http.Client>()),
+    () => AuthDataSource(sl<Dio>()),
   );
-
-  sl.registerLazySingleton<JwtService>(() => JwtServiceImp());
 
   sl.registerLazySingleton<EncryptionService>(() => SimpleE2eeService());
 
@@ -40,7 +42,7 @@ void initDependencies() {
   );
 
   sl.registerLazySingleton<ConversationDatasource>(
-    () => ConversationDatasource(sl<http.Client>(), sl<JwtService>()),
+    () => ConversationDatasource(sl<Dio>()),
   );
 
   sl.registerLazySingleton<ConversationRepository>(
@@ -48,7 +50,7 @@ void initDependencies() {
   );
 
   sl.registerLazySingleton<SocialDatasource>(
-    () => SocialDatasource(sl<http.Client>(), sl<JwtService>()),
+    () => SocialDatasource(sl<Dio>()),
   );
 
   sl.registerLazySingleton<SocialRepository>(

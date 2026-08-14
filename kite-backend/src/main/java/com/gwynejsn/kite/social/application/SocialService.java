@@ -10,12 +10,16 @@ import com.gwynejsn.kite.social.domain.RelationId;
 import com.gwynejsn.kite.social.domain.UserRelation;
 import com.gwynejsn.kite.social.domain.UserRelationRepository;
 import com.gwynejsn.kite.social.domain.enums.RelationStatus;
+import com.gwynejsn.kite.social.application.exceptions.RelationNotFoundException;
+import com.gwynejsn.kite.social.application.exceptions.RelationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.gwynejsn.kite.social.infrastructure.SocialMapper.INSTANCE;
@@ -29,9 +33,15 @@ public class SocialService {
     private final UserProfileServiceApi userProfileServiceApi;
     private final ConversationServiceApi conversationServiceApi;
 
+    /**
+     * Create a relation with status pending, or if declined, send another one
+     * @param requesterId
+     * @param addresseeId
+     * @return UserRelationResponse
+     */
     public UserRelationResponse sendFriendRequest(UserId requesterId, UserId addresseeId) {
         if (requesterId.equals(addresseeId)) {
-            throw new IllegalArgumentException("Cannot send friend request to yourself");
+            throw new RelationException("Cannot send friend request to yourself");
         }
 
         Optional<UserRelation> existingRelation = userRelationRepository.findRelationBetween(requesterId, addresseeId);
@@ -39,9 +49,9 @@ public class SocialService {
         if (existingRelation.isPresent()) {
             UserRelation relation = existingRelation.get();
             if (relation.getStatus() == RelationStatus.PENDING || relation.getStatus() == RelationStatus.ACCEPTED) {
-                throw new IllegalStateException("Relation already exists between users with status: " + relation.getStatus());
+                throw new RelationException("Relation already exists between users with status: " + relation.getStatus());
             }
-            // If declined previously, re-initiate request
+            // if declined previously, re-initiate request
             relation.setRequesterId(requesterId);
             relation.setAddresseeId(addresseeId);
             relation.setStatus(RelationStatus.PENDING);
@@ -67,14 +77,14 @@ public class SocialService {
 
     public UserRelationResponse acceptFriendRequest(UserId currentUserId, RelationId relationId) {
         UserRelation relation = userRelationRepository.findById(relationId)
-                .orElseThrow(() -> new IllegalArgumentException("Relation not found: " + relationId));
+                .orElseThrow(() -> new RelationNotFoundException("Relation not found: " + relationId));
 
         if (!relation.getAddresseeId().equals(currentUserId)) {
-            throw new IllegalStateException("Only the addressee can accept the friend request");
+            throw new RelationException("Only the addressee can accept the friend request");
         }
 
         if (relation.getStatus() != RelationStatus.PENDING) {
-            throw new IllegalStateException("Cannot accept friend request with status: " + relation.getStatus());
+            throw new RelationException("Cannot accept friend request with status: " + relation.getStatus());
         }
 
         relation.setStatus(RelationStatus.ACCEPTED);
@@ -82,7 +92,7 @@ public class SocialService {
         UserRelation saved = userRelationRepository.save(relation);
         log.info("Accepted friend request relation {}", relationId);
 
-        // Automatically initialize direct conversation between both users
+        // automatically initialize direct conversation between both users
         try {
             conversationServiceApi.initializeConversation(currentUserId, relation.getRequesterId());
         } catch (Exception e) {
@@ -94,10 +104,10 @@ public class SocialService {
 
     public UserRelationResponse declineFriendRequest(UserId currentUserId, RelationId relationId) {
         UserRelation relation = userRelationRepository.findById(relationId)
-                .orElseThrow(() -> new IllegalArgumentException("Relation not found: " + relationId));
+                .orElseThrow(() -> new RelationNotFoundException("Relation not found: " + relationId));
 
         if (!relation.getAddresseeId().equals(currentUserId)) {
-            throw new IllegalStateException("Only the addressee can decline the friend request");
+            throw new RelationException("Only the addressee can decline the friend request");
         }
 
         relation.setStatus(RelationStatus.DECLINED);
@@ -107,6 +117,12 @@ public class SocialService {
         return INSTANCE.toUserRelationResponse(saved);
     }
 
+    /**
+     * Block a user even if you already have a relation
+     * @param currentUserId
+     * @param targetUserId
+     * @return UserRelationResponse
+     */
     public UserRelationResponse blockUser(UserId currentUserId, UserId targetUserId) {
         Optional<UserRelation> existingRelation = userRelationRepository.findRelationBetween(currentUserId, targetUserId);
 
@@ -147,29 +163,34 @@ public class SocialService {
                 .toList();
     }
 
+    /**
+     * Returns all user profiles with the relation properties
+     * @param currentUserId
+     * @return UserDiscoveryResponse
+     */
     public List<UserDiscoveryResponse> getPeopleToConnect(UserId currentUserId) {
+        List<UserRelation> myRelations = userRelationRepository.findAllRelationsForUser(currentUserId);
+        Map<String, UserRelation> relationMap = new HashMap<>();
+        for (UserRelation rel : myRelations) {
+            UserId otherId = rel.getOtherUserId(currentUserId);
+            if (otherId != null && otherId.id() != null) {
+                relationMap.put(otherId.id().toString(), rel);
+            }
+        }
+
         List<UserProfileResponse> profiles = userProfileServiceApi.getUserProfiles(currentUserId);
 
         return profiles.stream()
-                .filter(profile ->
-                        profile.userId() != null
-                                && !profile.userId().equals(currentUserId.id().toString())
-                )
-                // requires the admin profile username to be always "admin" !!
-                .filter(profile ->
-                        !profile.username().equalsIgnoreCase("admin")
-                                && !"ADMIN".equalsIgnoreCase(profile.username())
-                )
+                .filter(profile -> profile.userId() != null && !profile.userId().equals(currentUserId.id().toString()))
+                .filter(profile -> profile.username() == null || !profile.username().equalsIgnoreCase("admin"))
                 .map(profile -> {
-                    UserId targetId = UserId.from(profile.userId());
-                    Optional<UserRelation> relationOpt = userRelationRepository.findRelationBetween(currentUserId, targetId);
+                    UserRelation relation = relationMap.get(profile.userId());
 
                     RelationStatus status = null;
                     Boolean isRequester = null;
                     String relationIdStr = null;
 
-                    if (relationOpt.isPresent()) {
-                        UserRelation relation = relationOpt.get();
+                    if (relation != null) {
                         status = relation.getStatus();
                         isRequester = relation.getRequesterId().equals(currentUserId);
                         relationIdStr = relation.getId().id().toString();

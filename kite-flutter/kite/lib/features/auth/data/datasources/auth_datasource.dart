@@ -1,71 +1,67 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:kite/features/auth/data/dto/register_request.dart';
 import 'package:kite/shared/exceptions/authentication_exception.dart';
 
 class AuthDataSource {
-  final http.Client client;
+  final Dio dio;
 
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:8080/kite/api/v1/auth';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8080/kite/api/v1/auth';
-    return 'http://localhost:8080/kite/api/v1/auth';
-  }
-
-  AuthDataSource(this.client);
+  AuthDataSource(this.dio);
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await client.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
+      final response = await dio.post(
+        '/auth/login',
+        data: {'email': email, 'password': password},
       );
 
-      final Map<String, dynamic> result = jsonDecode(response.body);
-
-      if (response.statusCode != 200) {
-        final errorMessage = result['message'] ?? 'Authentication failed';
-        throw AuthenticationException(errorMessage, response.statusCode);
+      if (response.data is Map<String, dynamic>) {
+        return response.data as Map<String, dynamic>;
       }
-
-      return result;
-    } on SocketException {
-      throw AuthenticationException(
-        'Cannot connect to server. Please check your backend connection.',
-        0,
-      );
-    } on FormatException {
       throw AuthenticationException('Invalid response format from server', 500);
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Authentication failed');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
 
   Future<String> register(RegisterRequest registerRequest) async {
     try {
-      final response = await client.post(
-        Uri.parse('$baseUrl/sign-up'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(registerRequest.toJson()),
+      final response = await dio.post(
+        '/auth/sign-up',
+        data: registerRequest.toJson(),
       );
 
-      // since the api returns only a string if success, check first if ok
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return response.body;
-      } else {
-        final Map<String, dynamic> errorResult = jsonDecode(response.body);
-        final errorMessage = errorResult['message'] ?? 'Registration failed';
-        throw AuthenticationException(errorMessage, response.statusCode);
+        return response.data.toString();
       }
-    } on SocketException {
-      throw AuthenticationException(
-        'Cannot connect to server. Please check your backend connection.',
-        0,
-      );
-    } on FormatException {
-      throw AuthenticationException('Invalid response format from server', 500);
+      throw AuthenticationException('Registration failed', response.statusCode ?? 500);
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Registration failed');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
+  }
+
+  Future<void> logout(String refreshToken) async {
+    try {
+      await dio.post(
+        '/auth/logout',
+        data: {'refreshToken': refreshToken},
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Logout failed');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  String _extractErrorMessage(DioException e, {required String fallback}) {
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError) {
+      return 'Cannot connect to server. Please check your connection.';
+    }
+    if (e.response?.data is Map && (e.response?.data as Map)['message'] != null) {
+      return (e.response?.data as Map)['message'].toString();
+    }
+    return fallback;
   }
 }

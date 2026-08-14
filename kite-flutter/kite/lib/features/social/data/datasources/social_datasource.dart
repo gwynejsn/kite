@@ -1,111 +1,77 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:kite/features/social/domain/user_discovery.dart';
 import 'package:kite/shared/exceptions/authentication_exception.dart';
-import 'package:kite/shared/networks/jwt_service.dart';
 
 class SocialDatasource {
-  final http.Client client;
-  final JwtService jwtService;
+  final Dio dio;
 
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:8080/kite/api/v1/social';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8080/kite/api/v1/social';
-    return 'http://localhost:8080/kite/api/v1/social';
-  }
-
-  SocialDatasource(this.client, this.jwtService);
+  SocialDatasource(this.dio);
 
   Future<List<UserDiscovery>> getPeopleToConnect() async {
     try {
-      final token = await jwtService.getToken();
-      final response = await client.get(
-        Uri.parse('$baseUrl/people'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+      final response = await dio.get('/social/people');
 
-      if (response.statusCode == 200) {
-        final List<dynamic> list = jsonDecode(response.body);
+      if (response.statusCode == 200 && response.data is List) {
+        final List<dynamic> list = response.data as List<dynamic>;
         return list
             .map((json) => UserDiscovery.fromJson(json as Map<String, dynamic>))
             .toList();
-      } else {
-        throw AuthenticationException(
-          'Failed to load people (${response.statusCode})',
-          response.statusCode,
-        );
       }
-    } on SocketException {
       throw AuthenticationException(
-        'Cannot connect to server. Please check your backend connection.',
-        0,
+        'Failed to load people (${response.statusCode})',
+        response.statusCode ?? 500,
       );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Failed to load people');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
 
   Future<void> sendFriendRequest(String targetUserId) async {
-    final token = await jwtService.getToken();
-    final response = await client.post(
-      Uri.parse('$baseUrl/request/$targetUserId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw AuthenticationException('Failed to send friend request', response.statusCode);
+    try {
+      await dio.post('/social/request/$targetUserId');
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Failed to send friend request');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
 
   Future<void> acceptFriendRequest(String relationId) async {
-    final token = await jwtService.getToken();
-    final response = await client.put(
-      Uri.parse('$baseUrl/accept/$relationId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw AuthenticationException('Failed to accept friend request', response.statusCode);
+    try {
+      await dio.put('/social/accept/$relationId');
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Failed to accept friend request');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
 
   Future<void> declineFriendRequest(String relationId) async {
-    final token = await jwtService.getToken();
-    final response = await client.put(
-      Uri.parse('$baseUrl/decline/$relationId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw AuthenticationException('Failed to decline friend request', response.statusCode);
+    try {
+      await dio.put('/social/decline/$relationId');
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Failed to decline friend request');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
 
   Future<void> blockUser(String targetUserId) async {
-    final token = await jwtService.getToken();
-    final response = await client.post(
-      Uri.parse('$baseUrl/block/$targetUserId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw AuthenticationException('Failed to block user', response.statusCode);
+    try {
+      await dio.post('/social/block/$targetUserId');
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Failed to block user');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
+  }
+
+  String _extractErrorMessage(DioException e, {required String fallback}) {
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError) {
+      return 'Cannot connect to server. Please check your connection.';
+    }
+    if (e.response?.data is Map && (e.response?.data as Map)['message'] != null) {
+      return (e.response?.data as Map)['message'].toString();
+    }
+    return fallback;
   }
 }

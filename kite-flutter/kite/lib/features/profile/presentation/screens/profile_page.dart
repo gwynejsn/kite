@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kite/features/auth/presentation/screens/login_page.dart';
 import 'package:kite/features/profile/domain/user_profile.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
-import 'package:kite/shared/networks/jwt_service.dart';
 import 'package:provider/provider.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   void _handleLogout(BuildContext context) async {
-    await sl<JwtService>().saveToken(null);
+    await sl<AuthRepository>().logout();
     if (context.mounted) {
       context.read<UserProfileProvider>().clearProfile();
       Navigator.pushAndRemoveUntil(

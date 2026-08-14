@@ -1,9 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:kite/app/app.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
-import 'package:kite/shared/networks/jwt_service.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -13,10 +12,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (context) => UserProfileProvider(
-            sl<http.Client>(),
-            sl<JwtService>(),
-          ),
+          create: (context) => UserProfileProvider(sl<Dio>()),
         ),
       ],
       child: const App(),

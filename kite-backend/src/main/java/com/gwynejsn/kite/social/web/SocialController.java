@@ -35,7 +35,7 @@ public class SocialController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable String targetUserId
     ) {
-        UserId targetId = UserId.from(targetUserId);
+        UserId targetId = new UserId(targetUserId);
         return ResponseEntity.ok(socialService.sendFriendRequest(authenticatedUser.getUserId(), targetId));
     }
 
@@ -62,7 +62,7 @@ public class SocialController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable String targetUserId
     ) {
-        UserId targetId = UserId.from(targetUserId);
+        UserId targetId = new UserId(targetUserId);
         return ResponseEntity.ok(socialService.blockUser(authenticatedUser.getUserId(), targetId));
     }
 

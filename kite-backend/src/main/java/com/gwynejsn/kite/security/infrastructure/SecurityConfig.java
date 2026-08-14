@@ -25,7 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.util.UUID;
 
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity()
 @EnableMethodSecurity
 public class SecurityConfig {
     @Bean
@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/auth/login", "/auth/sign-up", "/error").permitAll()
+                                .requestMatchers("/auth/login", "/auth/logout", "/auth/sign-up", "/auth/refresh", "/error").permitAll()
                                 .requestMatchers("/ws-connect", "/ws-connect/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/user-profile").hasAnyRole("USER", "ADMIN")
                                 .anyRequest().authenticated()

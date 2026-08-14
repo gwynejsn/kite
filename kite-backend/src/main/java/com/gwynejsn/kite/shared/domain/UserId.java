@@ -13,8 +13,11 @@ public record UserId(UUID id) implements DomainId {
         this(UUID.randomUUID());
     }
 
+    public UserId(String id) {
+        this(UUID.fromString(id));
+    }
+
     public static UserId from(String id) {
-        Assert.hasText(id, "id string must not be null or empty");
         return new UserId(UUID.fromString(id));
     }
 }

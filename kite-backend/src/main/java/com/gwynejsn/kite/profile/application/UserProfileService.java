@@ -1,21 +1,23 @@
 package com.gwynejsn.kite.profile.application;
 
+import com.gwynejsn.kite.profile.api.UserProfileResponse;
 import com.gwynejsn.kite.profile.api.UserProfileServiceApi;
 import com.gwynejsn.kite.profile.application.dto.UpdateUserProfileRequest;
-import com.gwynejsn.kite.profile.api.UserProfileResponse;
 import com.gwynejsn.kite.profile.application.exceptions.UserProfileNotFoundException;
 import com.gwynejsn.kite.profile.domain.UserProfile;
 import com.gwynejsn.kite.profile.infrastructure.UserProfileRepo;
-import com.gwynejsn.kite.shared.security.AuthenticatedUser;
 import com.gwynejsn.kite.shared.domain.UserId;
+import com.gwynejsn.kite.shared.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 import static com.gwynejsn.kite.profile.infrastructure.UserProfileMapper.INSTANCE;
 
 @Service
@@ -31,7 +33,6 @@ public class UserProfileService implements UserProfileServiceApi {
                 .findUserProfileByUserId(userId)
                 .map(INSTANCE::toUserProfileResponse)
                 .orElseThrow(() -> new UserProfileNotFoundException("User " + userId + " not found"));
-
     }
 
     @Override
