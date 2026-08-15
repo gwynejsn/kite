@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_state.dart';
+import 'package:kite/features/conversation/presentation/screens/conversation_room_page.dart';
 import 'package:kite/shared/di/injection_container.dart';
 
 class ConversationPage extends StatefulWidget {
@@ -37,14 +38,8 @@ class _ConversationPageState extends State<ConversationPage> {
         ),
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit_square),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.search_rounded), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.edit_square), onPressed: () {}),
         ],
       ),
       body: ValueListenableBuilder<ConversationState>(
@@ -70,7 +65,9 @@ class _ConversationPageState extends State<ConversationPage> {
                     Text(
                       state.errorMessage!,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -98,13 +95,18 @@ class _ConversationPageState extends State<ConversationPage> {
                         Icon(
                           Icons.chat_bubble_outline_rounded,
                           size: 64,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'No conversations yet',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
@@ -112,7 +114,10 @@ class _ConversationPageState extends State<ConversationPage> {
                         Text(
                           'Start a chat to get connected!',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -128,7 +133,8 @@ class _ConversationPageState extends State<ConversationPage> {
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               itemCount: state.conversations.length,
-              separatorBuilder: (context, index) => const Divider(height: 1, indent: 76),
+              separatorBuilder: (context, index) =>
+                  const Divider(height: 1, indent: 76),
               itemBuilder: (context, index) {
                 final conversation = state.conversations[index];
                 return _ConversationTile(conversation: conversation);
@@ -151,7 +157,9 @@ class _ConversationTile extends StatelessWidget {
     final difference = now.difference(dateTime);
 
     if (difference.inDays == 0) {
-      final hour = dateTime.hour > 12 ? dateTime.hour - 12 : (dateTime.hour == 0 ? 12 : dateTime.hour);
+      final hour = dateTime.hour > 12
+          ? dateTime.hour - 12
+          : (dateTime.hour == 0 ? 12 : dateTime.hour);
       final minute = dateTime.minute.toString().padLeft(2, '0');
       final period = dateTime.hour >= 12 ? 'PM' : 'AM';
       return '$hour:$minute $period';
@@ -171,7 +179,8 @@ class _ConversationTile extends StatelessWidget {
         ? conversation.name!
         : 'Conversation';
 
-    final lastMessageContent = conversation.lastMessage?.content.isNotEmpty == true
+    final lastMessageContent =
+        conversation.lastMessage?.content.isNotEmpty == true
         ? conversation.lastMessage!.content
         : 'No messages yet';
 
@@ -186,10 +195,14 @@ class _ConversationTile extends StatelessWidget {
       leading: CircleAvatar(
         radius: 26,
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        backgroundImage: conversation.conversationPhoto != null && conversation.conversationPhoto!.isNotEmpty
+        backgroundImage:
+            conversation.conversationPhoto != null &&
+                conversation.conversationPhoto!.isNotEmpty
             ? NetworkImage(conversation.conversationPhoto!)
             : null,
-        child: conversation.conversationPhoto == null || conversation.conversationPhoto!.isEmpty
+        child:
+            conversation.conversationPhoto == null ||
+                conversation.conversationPhoto!.isEmpty
             ? Text(
                 initials,
                 style: TextStyle(
@@ -233,7 +246,14 @@ class _ConversationTile extends StatelessWidget {
         ),
       ),
       onTap: () {
-        debugPrint('Opened conversation ${conversation.id}');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) {
+              return ConversationRoomPage(conversation: conversation);
+            },
+          ),
+        );
       },
     );
   }

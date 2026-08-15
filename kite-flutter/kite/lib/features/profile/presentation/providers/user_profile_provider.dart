@@ -36,7 +36,10 @@ class UserProfileProvider extends ChangeNotifier {
       }
     } on DioException catch (e) {
       _isLoading = false;
-      _errorMessage = _extractErrorMessage(e, fallback: 'Failed to load user profile');
+      _errorMessage = _extractErrorMessage(
+        e,
+        fallback: 'Failed to load user profile',
+      );
       notifyListeners();
     } catch (e) {
       _isLoading = false;
@@ -62,7 +65,8 @@ class UserProfileProvider extends ChangeNotifier {
         e.type == DioExceptionType.connectionError) {
       return 'Cannot connect to server. Please check your backend connection.';
     }
-    if (e.response?.data is Map && (e.response?.data as Map)['message'] != null) {
+    if (e.response?.data is Map &&
+        (e.response?.data as Map)['message'] != null) {
       return (e.response?.data as Map)['message'].toString();
     }
     return fallback;

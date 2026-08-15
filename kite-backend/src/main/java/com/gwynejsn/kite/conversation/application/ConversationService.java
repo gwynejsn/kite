@@ -2,6 +2,7 @@ package com.gwynejsn.kite.conversation.application;
 
 import com.gwynejsn.kite.conversation.api.ConversationServiceApi;
 import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
+import com.gwynejsn.kite.conversation.application.dto.MessageResponse;
 import com.gwynejsn.kite.conversation.domain.Conversation;
 import com.gwynejsn.kite.conversation.domain.ConversationId;
 import com.gwynejsn.kite.conversation.domain.enums.ConversationType;
@@ -39,24 +40,9 @@ public class ConversationService implements ConversationServiceApi {
                 .toList();
     }
 
-    public ConversationResponse findDirectConversation(UserId currentId, UserId recipientId) {
-        log.debug("Find or create direct conversation for {} to {}", currentId, recipientId);
-        Conversation conversation = conversationRepo
-                .findByDirectMembers(currentId, recipientId)
-                .orElseGet(() -> {
-                    log.info("Creating new direct conversation between {} and {}", currentId, recipientId);
-                    Instant now = Instant.now();
-                    Conversation newConv = Conversation.builder()
-                            .id(new ConversationId())
-                            .type(ConversationType.DIRECT)
-                            .memberIds(Set.of(currentId, recipientId))
-                            .createdAt(now)
-                            .updatedAt(now)
-                            .build();
-                    return conversationRepo.save(newConv);
-                });
-
-        return mapToResponse(conversation, currentId);
+    public List<MessageResponse> getAllMessages(ConversationId conversationId, UserId currentId) {
+//        Conversation conversation = conversationRepo.
+        return List.of();
     }
 
     @Override

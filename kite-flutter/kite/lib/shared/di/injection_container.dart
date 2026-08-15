@@ -9,6 +9,7 @@ import 'package:kite/features/conversation/data/datasources/conversation_datasou
 import 'package:kite/features/conversation/data/repositories/conversation_repository_impl.dart';
 import 'package:kite/features/conversation/domain/repositories/conversation_repository.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
+import 'package:kite/features/conversation/presentation/controllers/conversation_room_controller.dart';
 import 'package:kite/features/social/data/datasources/social_datasource.dart';
 import 'package:kite/features/social/data/repositories/social_repository_impl.dart';
 import 'package:kite/features/social/domain/repositories/social_repository.dart';
@@ -24,12 +25,11 @@ final sl = GetIt.instance;
 void initDependencies() {
   sl.registerLazySingleton<JwtService>(() => JwtServiceImp());
 
+  // DioClient holds DIO, it is like the config file here
   sl.registerLazySingleton<DioClient>(() => DioClient(sl<JwtService>()));
   sl.registerLazySingleton<Dio>(() => sl<DioClient>().dio);
 
-  sl.registerLazySingleton<AuthDataSource>(
-    () => AuthDataSource(sl<Dio>()),
-  );
+  sl.registerLazySingleton<AuthDataSource>(() => AuthDataSource(sl<Dio>()));
 
   sl.registerLazySingleton<EncryptionService>(() => SimpleE2eeService());
 
@@ -49,9 +49,7 @@ void initDependencies() {
     () => ConversationRepositoryImpl(sl<ConversationDatasource>()),
   );
 
-  sl.registerLazySingleton<SocialDatasource>(
-    () => SocialDatasource(sl<Dio>()),
-  );
+  sl.registerLazySingleton<SocialDatasource>(() => SocialDatasource(sl<Dio>()));
 
   sl.registerLazySingleton<SocialRepository>(
     () => SocialRepositoryImpl(sl<SocialDatasource>()),
@@ -67,6 +65,10 @@ void initDependencies() {
 
   sl.registerFactory<ConversationController>(
     () => ConversationController(sl<ConversationRepository>()),
+  );
+
+  sl.registerFactory<ConversationRoomController>(
+    () => ConversationRoomController(sl<ConversationRepository>()),
   );
 
   sl.registerFactory<SocialController>(

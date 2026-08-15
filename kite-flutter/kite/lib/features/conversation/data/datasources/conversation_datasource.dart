@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:kite/features/conversation/domain/conversation.dart';
+import 'package:kite/features/conversation/domain/message_response.dart';
 import 'package:kite/shared/exceptions/authentication_exception.dart';
 
 class ConversationDatasource {
@@ -23,6 +24,26 @@ class ConversationDatasource {
       );
     } on DioException catch (e) {
       final message = _extractErrorMessage(e, fallback: 'Failed to load conversations');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<List<MessageResponse>> getInitialMessages(String conversationId) async {
+    try {
+      final response = await dio.get('/conversation/$conversationId');
+
+      if (response.statusCode == 200 && response.data is List) {
+        final List<dynamic> list = response.data as List<dynamic>;
+        return list
+            .map((json) => MessageResponse.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+      throw AuthenticationException(
+        'Failed to load messages (${response.statusCode})',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Failed to load messages');
       throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }

@@ -12,7 +12,8 @@ class SocialPage extends StatefulWidget {
   State<SocialPage> createState() => _SocialPageState();
 }
 
-class _SocialPageState extends State<SocialPage> with SingleTickerProviderStateMixin {
+class _SocialPageState extends State<SocialPage>
+    with SingleTickerProviderStateMixin {
   late final SocialController _controller;
   late final TabController _tabController;
 
@@ -72,7 +73,9 @@ class _SocialPageState extends State<SocialPage> with SingleTickerProviderStateM
                     Text(
                       state.errorMessage!,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -86,9 +89,15 @@ class _SocialPageState extends State<SocialPage> with SingleTickerProviderStateM
             );
           }
 
-          final discoverList = state.people.where((p) => p.relationStatus == null).toList();
-          final requestsList = state.people.where((p) => p.relationStatus == RelationStatus.pending).toList();
-          final friendsList = state.people.where((p) => p.relationStatus == RelationStatus.accepted).toList();
+          final discoverList = state.people
+              .where((p) => p.relationStatus == null)
+              .toList();
+          final requestsList = state.people
+              .where((p) => p.relationStatus == RelationStatus.pending)
+              .toList();
+          final friendsList = state.people
+              .where((p) => p.relationStatus == RelationStatus.accepted)
+              .toList();
 
           return TabBarView(
             controller: _tabController,
@@ -127,13 +136,16 @@ class _UserListView extends StatelessWidget {
     required this.controller,
   });
 
+  // dragging down will refresh using the refreshIndicator
   @override
   Widget build(BuildContext context) {
     if (users.isEmpty) {
       return RefreshIndicator(
         onRefresh: () => controller.fetchPeople(),
         child: ListView(
+          // this makes the list scrollable even if the list is short
           physics: const AlwaysScrollableScrollPhysics(),
+          // if the users is empty, show the logo and message
           children: [
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.5,
@@ -144,7 +156,9 @@ class _UserListView extends StatelessWidget {
                     Icon(
                       Icons.people_outline_rounded,
                       size: 56,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -169,7 +183,7 @@ class _UserListView extends StatelessWidget {
       child: ListView.separated(
         padding: const EdgeInsets.all(12.0),
         itemCount: users.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        separatorBuilder: (context, index) => const SizedBox(height: 4),
         itemBuilder: (context, index) {
           final user = users[index];
           return _UserCard(user: user, controller: controller);
@@ -189,7 +203,9 @@ class _UserCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fullName = '${user.firstName} ${user.lastName}'.trim();
     final nameDisplay = fullName.isNotEmpty ? fullName : user.username;
-    final initials = nameDisplay.isNotEmpty ? nameDisplay[0].toUpperCase() : 'U';
+    final initials = nameDisplay.isNotEmpty
+        ? nameDisplay[0].toUpperCase()
+        : 'U';
 
     return Card(
       elevation: 0.5,
@@ -222,7 +238,10 @@ class _UserCard extends StatelessWidget {
                 children: [
                   Text(
                     nameDisplay,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -240,7 +259,9 @@ class _UserCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -260,7 +281,9 @@ class _UserCard extends StatelessWidget {
     if (user.relationStatus == null) {
       return ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
         onPressed: () => controller.sendFriendRequest(user.userId),
@@ -275,7 +298,9 @@ class _UserCard extends StatelessWidget {
         // Outgoing Request
         return OutlinedButton(
           style: OutlinedButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           onPressed: user.relationId != null
               ? () => controller.declineFriendRequest(user.relationId!)
