@@ -10,6 +10,7 @@ class UserProfile {
   final String bio;
   final Gender gender;
   final PreferredTheme preferredTheme;
+  final String? publicKey;
 
   UserProfile({
     required this.userId,
@@ -20,6 +21,7 @@ class UserProfile {
     required this.bio,
     required this.gender,
     required this.preferredTheme,
+    this.publicKey,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class UserProfile {
         (t) => t.name.toUpperCase() == (json['preferredTheme'] as String?).toString().toUpperCase(),
         orElse: () => PreferredTheme.system,
       ),
+      publicKey: json['publicKey'] as String?,
     );
   }
 
@@ -51,6 +54,7 @@ class UserProfile {
       'bio': bio,
       'gender': gender.name.toUpperCase(),
       'preferredTheme': preferredTheme.name.toUpperCase(),
+      'publicKey': publicKey,
     };
   }
 }

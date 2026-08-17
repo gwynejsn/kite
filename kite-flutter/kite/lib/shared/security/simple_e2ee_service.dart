@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kite/shared/security/encryption_service.dart';
 
 class SimpleE2eeService implements EncryptionService {
-  // X25519 is an Elliptic Curve Diffie-Hellman (ECDH)
   final _keyAlgorithm = X25519();
   final _cipherAlgorithm = AesGcm.with256bits();
   final _secureStorage = const FlutterSecureStorage();
@@ -14,10 +14,20 @@ class SimpleE2eeService implements EncryptionService {
 
   @override
   Future<String> initAndGetPublicKey() async {
+    final existingPrivateKey = await _getPrivateKey();
+    if (existingPrivateKey != null && existingPrivateKey.isNotEmpty) {
+      final seed = base64Decode(existingPrivateKey);
+      final keyPair = await _keyAlgorithm.newKeyPairFromSeed(seed);
+      final publicKey = await keyPair.extractPublicKey();
+      return base64Encode(publicKey.bytes);
+    }
+
     final keyPair = await _keyAlgorithm.newKeyPair();
     final privateKeyBytes = await keyPair.extractPrivateKeyBytes();
     final publicKey = await keyPair.extractPublicKey();
 
+    // we only store the private key because the public key can easily be
+    // derived from the private key which is why we call it a key pair
     await _secureStorage.write(
       key: _privateKeyStorageKey,
       value: base64Encode(privateKeyBytes),
@@ -26,48 +36,79 @@ class SimpleE2eeService implements EncryptionService {
     return base64Encode(publicKey.bytes);
   }
 
-  /// generate a secret key using my private key and the public key of the recipient,
-  /// then i use aes to encrypt the message, then lock it using the secret key generated earlier
-  /// the x25519 makes it so that the receiver can make the secret key by combining his private key
-  /// and the sender's public key that will then unlock the aes with the message
   @override
-  Future<Map<String, String>> encryptMessage({
+  Future<Map<String, dynamic>> encryptEnvelope({
     required String plainText,
-    required String recipientPublicKeyBase64,
+    required Map<String, String> memberPublicKeys,
   }) async {
-    final myKeyPair = await _loadLocalKeyPair();
+    // generate a one-time random symmetric key for this specific message payload
+    final messageKey = await _cipherAlgorithm.newSecretKey();
+    final messageKeyBytes = await messageKey.extractBytes();
 
-    final recipientPublicKey = SimplePublicKey(
-      base64Decode(recipientPublicKeyBase64),
-      type: KeyPairType.x25519,
-    );
-
-    // this combines the private key with the recipient's public key using X25519 to generate a shared secret key
-    final sharedSecretKey = await _keyAlgorithm.sharedSecretKey(
-      keyPair: myKeyPair,
-      remotePublicKey: recipientPublicKey,
-    );
-
-    // encrypt payload with AES-GCM making the created sharedSecretKey as the key
+    // symmetric Layer: encrypt the message payload using the symmetric key (Symmetric Authenticated Encryption)
+    // this outputs the 'secretBox' containing ciphertext, nonce, and MAC tag
     final secretBox = await _cipherAlgorithm.encrypt(
       utf8.encode(plainText),
-      secretKey: sharedSecretKey,
+      secretKey: messageKey,
     );
 
+    // load the local asymmetric X25519 key pair initialized during account setup
+    final myKeyPair = await _loadLocalKeyPair();
+
+    // retrieve our base64-encoded public key to attach to the outbound payload metadata
+    final senderPublicKey = await initAndGetPublicKey();
+
+    final Map<String, String> encryptedGroupKeys = {};
+
+    // asymmetric Layer: Encrypt the symmetric message key individually for each recipient
+    for (final entry in memberPublicKeys.entries) {
+      final userId = entry.key;
+      final pubKeyBase64 = entry.value;
+
+      if (pubKeyBase64.isEmpty) continue;
+
+      // parse the recipient's public key as an X25519 public key coordinate
+      final recipientPublicKey = SimplePublicKey(
+        base64Decode(pubKeyBase64),
+        type: KeyPairType.x25519,
+      );
+
+      // perform X25519 Elliptic-Curve Diffie-Hellman (ECDH) key agreement
+      // to derive a unique, shared symmetric secret between the sender and this recipient
+      final sharedSecretKey = await _keyAlgorithm.sharedSecretKey(
+        keyPair: myKeyPair,
+        remotePublicKey: recipientPublicKey,
+      );
+
+      // encrypt the raw symmetric 'messageKeyBytes' using the derived shared secret.
+      // this outputs a 'keyBox' unique to this specific recipient
+      final keyBox = await _cipherAlgorithm.encrypt(
+        messageKeyBytes,
+        secretKey: sharedSecretKey,
+      );
+
+      // serialize the recipient's keyBox into a unified string segment
+      final keyCombined =
+          '${base64Encode(keyBox.cipherText)}:${base64Encode(keyBox.nonce)}:${base64Encode(keyBox.mac.bytes)}';
+      encryptedGroupKeys[userId] = keyCombined;
+    }
+
+    // return the composite envelope payload containing the encrypted message and all wrapped keys
     return {
       'cipherText': base64Encode(secretBox.cipherText),
       'nonce': base64Encode(secretBox.nonce),
       'mac': base64Encode(secretBox.mac.bytes),
+      'senderPublicKey': senderPublicKey,
+      'encryptedGroupKeys': encryptedGroupKeys,
     };
   }
 
   @override
-  Future<String> decryptMessage({
+  Future<String> decryptEnvelope({
     required Map<String, String> payload,
     required String senderPublicKeyBase64,
   }) async {
     final myKeyPair = await _loadLocalKeyPair();
-
     final senderPublicKey = SimplePublicKey(
       base64Decode(senderPublicKeyBase64),
       type: KeyPairType.x25519,
@@ -78,30 +119,57 @@ class SimpleE2eeService implements EncryptionService {
       remotePublicKey: senderPublicKey,
     );
 
-    final secretBox = SecretBox(
+    final encryptedKeyForUser = payload['encryptedKey'];
+    if (encryptedKeyForUser == null || encryptedKeyForUser.isEmpty) {
+      throw Exception('Encrypted key missing in envelope payload');
+    }
+
+    final keyParts = encryptedKeyForUser.split(':');
+    if (keyParts.length < 3) {
+      throw Exception('Invalid envelope key format');
+    }
+
+    final keyBox = SecretBox(
+      base64Decode(keyParts[0]),
+      nonce: base64Decode(keyParts[1]),
+      mac: Mac(base64Decode(keyParts[2])),
+    );
+
+    final messageKeyBytes = await _cipherAlgorithm.decrypt(
+      keyBox,
+      secretKey: sharedSecretKey,
+    );
+
+    final messageSecretBox = SecretBox(
       base64Decode(payload['cipherText']!),
       nonce: base64Decode(payload['nonce']!),
       mac: Mac(base64Decode(payload['mac']!)),
     );
 
     final clearBytes = await _cipherAlgorithm.decrypt(
-      secretBox,
-      secretKey: sharedSecretKey,
+      messageSecretBox,
+      secretKey: SecretKey(messageKeyBytes),
     );
 
     return utf8.decode(clearBytes);
   }
 
   Future<SimpleKeyPair> _loadLocalKeyPair() async {
-    final privateKeyBase64 = await _getPrivateKey();
-    if (privateKeyBase64 == null) {
-      throw Exception('No private key found on device.');
+    String? privateKeyBase64 = await _getPrivateKey();
+    if (privateKeyBase64 == null || privateKeyBase64.isEmpty) {
+      await initAndGetPublicKey();
+      privateKeyBase64 = await _getPrivateKey();
     }
-    final seed = base64Decode(privateKeyBase64);
+    final seed = base64Decode(privateKeyBase64!);
     return await _keyAlgorithm.newKeyPairFromSeed(seed);
   }
 
-  Future<String?> _getPrivateKey() {
-    return _secureStorage.read(key: _privateKeyStorageKey);
+  Future<String?> _getPrivateKey() async {
+    try {
+      return await _secureStorage.read(key: _privateKeyStorageKey);
+    } catch (e) {
+      debugPrint('Error reading private key: $e');
+      return null;
+    }
   }
 }

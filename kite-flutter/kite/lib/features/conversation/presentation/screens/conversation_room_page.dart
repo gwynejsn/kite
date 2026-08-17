@@ -5,6 +5,7 @@ import 'package:kite/features/conversation/presentation/controllers/conversation
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_state.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
+import 'package:kite/shared/security/encryption_service.dart';
 import 'package:provider/provider.dart';
 
 class ConversationRoomPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
   void initState() {
     super.initState();
     _controller = sl<ConversationRoomController>();
-    _controller.fetchInitialMessages(widget.conversation.id);
+    _controller.initRoom(widget.conversation.id);
   }
 
   @override
@@ -34,15 +35,42 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
     super.dispose();
   }
 
+  void _handleSendMessage(String? currentUserId) {
+    final content = _textController.text.trim();
+    if (content.isNotEmpty && currentUserId != null) {
+      _textController.clear();
+
+      String? recipientPublicKey;
+      final otherMemberId = widget.conversation.memberIds.firstWhere(
+        (id) => id != currentUserId,
+        orElse: () => '',
+      );
+      if (otherMemberId.isNotEmpty) {
+        recipientPublicKey =
+            widget.conversation.memberPublicKeys[otherMemberId];
+      }
+
+      _controller.sendMessage(
+        conversationId: widget.conversation.id,
+        content: content,
+        currentUserId: currentUserId,
+        recipientPublicKey: recipientPublicKey,
+        memberPublicKeys: widget.conversation.memberPublicKeys,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final title = widget.conversation.name != null &&
-            widget.conversation.name!.isNotEmpty
+    final title =
+        widget.conversation.name != null && widget.conversation.name!.isNotEmpty
         ? widget.conversation.name!
         : 'Chat';
     final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
-    final currentUserId =
-        context.read<UserProfileProvider>().userProfile?.userId;
+    final currentUserId = context
+        .watch<UserProfileProvider>()
+        .userProfile
+        ?.userId;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -53,19 +81,20 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
             CircleAvatar(
               radius: 18,
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              backgroundImage: widget.conversation.conversationPhoto != null &&
+              backgroundImage:
+                  widget.conversation.conversationPhoto != null &&
                       widget.conversation.conversationPhoto!.isNotEmpty
                   ? NetworkImage(widget.conversation.conversationPhoto!)
                   : null,
-              child: widget.conversation.conversationPhoto == null ||
+              child:
+                  widget.conversation.conversationPhoto == null ||
                       widget.conversation.conversationPhoto!.isEmpty
                   ? Text(
                       initials,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color:
-                            Theme.of(context).colorScheme.onPrimaryContainer,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                     )
                   : null,
@@ -98,10 +127,7 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.call_rounded),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.call_rounded), onPressed: () {}),
           IconButton(
             icon: const Icon(Icons.videocam_rounded),
             onPressed: () {},
@@ -145,8 +171,8 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
-                            onPressed: () => _controller
-                                .fetchInitialMessages(widget.conversation.id),
+                            onPressed: () =>
+                                _controller.initRoom(widget.conversation.id),
                             icon: const Icon(Icons.refresh_rounded),
                             label: const Text('Retry'),
                           ),
@@ -164,10 +190,9 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                         Icon(
                           Icons.mark_chat_read_outlined,
                           size: 56,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant
-                              .withValues(alpha: 0.5),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -175,14 +200,14 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Say hi to start the conversation! 👋',
+                          'Say hi to start the conversation!',
                           style: TextStyle(
                             fontSize: 13,
                             color: Theme.of(context)
@@ -204,11 +229,14 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                   ),
                   itemCount: state.messages.length,
                   itemBuilder: (context, index) {
-                    // Reversed list display so latest is at the bottom
                     final message =
                         state.messages[state.messages.length - 1 - index];
                     final isMe = message.senderId == currentUserId;
-                    return _MessageBubble(message: message, isMe: isMe);
+                    return _MessageBubble(
+                      message: message,
+                      isMe: isMe,
+                      currentUserId: currentUserId,
+                    );
                   },
                 );
               },
@@ -216,7 +244,10 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
           ),
 
           // Message Input Field Bar
-          _MessageInputBar(textController: _textController),
+          _MessageInputBar(
+            textController: _textController,
+            onSend: () => _handleSendMessage(currentUserId),
+          ),
         ],
       ),
     );
@@ -226,8 +257,13 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
 class _MessageBubble extends StatelessWidget {
   final MessageResponse message;
   final bool isMe;
+  final String? currentUserId;
 
-  const _MessageBubble({required this.message, required this.isMe});
+  const _MessageBubble({
+    required this.message,
+    required this.isMe,
+    this.currentUserId,
+  });
 
   String _formatTime(DateTime dateTime) {
     final hour = dateTime.hour > 12
@@ -241,8 +277,7 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final surfaceColor =
-        Theme.of(context).colorScheme.surfaceContainerHighest;
+    final surfaceColor = Theme.of(context).colorScheme.surfaceContainerHighest;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -262,17 +297,39 @@ class _MessageBubble extends StatelessWidget {
           ),
         ),
         child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
-            Text(
-              message.textContent,
-              style: TextStyle(
-                fontSize: 15,
-                color: isMe
-                    ? Colors.white
-                    : Theme.of(context).colorScheme.onSurface,
+            FutureBuilder<String>(
+              future: message.getDecryptedContent(
+                sl<EncryptionService>(),
+                currentUserId: currentUserId,
               ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Text(
+                    'Decrypting...',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontStyle: FontStyle.italic,
+                      color: isMe
+                          ? Colors.white70
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  );
+                }
+                final text = snapshot.data ?? 'Encrypted Message';
+                return Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isMe
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 4),
             Text(
@@ -281,10 +338,9 @@ class _MessageBubble extends StatelessWidget {
                 fontSize: 10,
                 color: isMe
                     ? Colors.white.withValues(alpha: 0.7)
-                    : Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.7),
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -296,8 +352,9 @@ class _MessageBubble extends StatelessWidget {
 
 class _MessageInputBar extends StatelessWidget {
   final TextEditingController textController;
+  final VoidCallback onSend;
 
-  const _MessageInputBar({required this.textController});
+  const _MessageInputBar({required this.textController, required this.onSend});
 
   @override
   Widget build(BuildContext context) {
@@ -307,10 +364,9 @@ class _MessageInputBar extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: Theme.of(context)
-                .colorScheme
-                .outlineVariant
-                .withValues(alpha: 0.2),
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.2),
           ),
         ),
       ),
@@ -331,6 +387,7 @@ class _MessageInputBar extends StatelessWidget {
               child: TextField(
                 controller: textController,
                 textCapitalization: TextCapitalization.sentences,
+                onSubmitted: (_) => onSend(),
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
                   contentPadding: const EdgeInsets.symmetric(
@@ -338,10 +395,9 @@ class _MessageInputBar extends StatelessWidget {
                     vertical: 10,
                   ),
                   filled: true,
-                  fillColor: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest
-                      .withValues(alpha: 0.5),
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -355,11 +411,7 @@ class _MessageInputBar extends StatelessWidget {
                 backgroundColor: Theme.of(context).colorScheme.primary,
               ),
               icon: const Icon(Icons.send_rounded, color: Colors.white),
-              onPressed: () {
-                if (textController.text.trim().isNotEmpty) {
-                  textController.clear();
-                }
-              },
+              onPressed: onSend,
             ),
           ],
         ),

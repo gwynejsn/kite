@@ -1,10 +1,12 @@
 abstract class EncryptionService {
   Future<String> initAndGetPublicKey();
-  Future<Map<String, String>> encryptMessage({
+
+  Future<Map<String, dynamic>> encryptEnvelope({
     required String plainText,
-    required String recipientPublicKeyBase64,
+    required Map<String, String> memberPublicKeys,
   });
-  Future<String> decryptMessage({
+
+  Future<String> decryptEnvelope({
     required Map<String, String> payload,
     required String senderPublicKeyBase64,
   });

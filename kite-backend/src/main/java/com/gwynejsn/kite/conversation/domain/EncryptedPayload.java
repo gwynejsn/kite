@@ -1,7 +1,8 @@
 package com.gwynejsn.kite.conversation.domain;
 
-import lombok.Getter;
 import lombok.Value;
+
+import java.util.Map;
 
 @Value
 public class EncryptedPayload {
@@ -9,4 +10,5 @@ public class EncryptedPayload {
     String nonce;
     String mac;
     String senderPublicKey;
+    Map<String, String> encryptedGroupKeys;
 }

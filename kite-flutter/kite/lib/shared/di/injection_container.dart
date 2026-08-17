@@ -6,6 +6,7 @@ import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kite/features/auth/presentation/controllers/login_controller.dart';
 import 'package:kite/features/auth/presentation/controllers/register_controller.dart';
 import 'package:kite/features/conversation/data/datasources/conversation_datasource.dart';
+import 'package:kite/features/conversation/data/datasources/conversation_websocket_datasource.dart';
 import 'package:kite/features/conversation/data/repositories/conversation_repository_impl.dart';
 import 'package:kite/features/conversation/domain/repositories/conversation_repository.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
@@ -17,6 +18,7 @@ import 'package:kite/features/social/presentation/controllers/social_controller.
 import 'package:kite/shared/networks/dio_client.dart';
 import 'package:kite/shared/networks/jwt_service.dart';
 import 'package:kite/shared/networks/jwt_service_imp.dart';
+import 'package:kite/shared/networks/websocket_service.dart';
 import 'package:kite/shared/security/encryption_service.dart';
 import 'package:kite/shared/security/simple_e2ee_service.dart';
 
@@ -28,6 +30,8 @@ void initDependencies() {
   // DioClient holds DIO, it is like the config file here
   sl.registerLazySingleton<DioClient>(() => DioClient(sl<JwtService>()));
   sl.registerLazySingleton<Dio>(() => sl<DioClient>().dio);
+
+  sl.registerLazySingleton<WebsocketService>(() => WebsocketService(sl<JwtService>()));
 
   sl.registerLazySingleton<AuthDataSource>(() => AuthDataSource(sl<Dio>()));
 
@@ -45,8 +49,16 @@ void initDependencies() {
     () => ConversationDatasource(sl<Dio>()),
   );
 
+  sl.registerLazySingleton<ConversationWebsocketDatasource>(
+    () => ConversationWebsocketDatasource(sl<WebsocketService>()),
+  );
+
   sl.registerLazySingleton<ConversationRepository>(
-    () => ConversationRepositoryImpl(sl<ConversationDatasource>()),
+    () => ConversationRepositoryImpl(
+      remoteDatasource: sl<ConversationDatasource>(),
+      websocketDatasource: sl<ConversationWebsocketDatasource>(),
+      encryptionService: sl<EncryptionService>(),
+    ),
   );
 
   sl.registerLazySingleton<SocialDatasource>(() => SocialDatasource(sl<Dio>()));

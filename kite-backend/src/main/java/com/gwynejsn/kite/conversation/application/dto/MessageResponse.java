@@ -18,19 +18,4 @@ public record MessageResponse(
         String replyToMessageId,
         Instant createdAt,
         Instant updatedAt
-) {
-    public static MessageResponse from(Message message) {
-        return new MessageResponse(
-                message.getId() != null ? message.getId().id().toString() : null,
-                message.getConversationId() != null ? message.getConversationId().id().toString() : null,
-                message.getSenderId() != null ? message.getSenderId().id().toString() : null,
-                message.getEncryptedPayload(),
-                message.getMediaUrl(),
-                message.getMessageType(),
-                message.getStatus(),
-                message.getReplyToMessageId() != null ? message.getReplyToMessageId().id().toString() : null,
-                message.getCreatedAt(),
-                message.getUpdatedAt()
-        );
-    }
-}
+) { }

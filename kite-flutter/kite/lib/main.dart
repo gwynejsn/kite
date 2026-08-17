@@ -15,7 +15,7 @@ void main() {
         ChangeNotifierProvider(
           create: (context) => UserProfileProvider(sl<Dio>()),
         ),
-        ChangeNotifierProvider(create: (context) => WebsocketService()),
+        ChangeNotifierProvider.value(value: sl<WebsocketService>()),
       ],
       child: const App(),
     ),

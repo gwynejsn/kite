@@ -1,70 +1,130 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:kite/features/conversation/domain/conversation.dart';
+import 'package:kite/features/conversation/domain/message_response.dart';
+import 'package:kite/shared/networks/jwt_service.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 class WebsocketService extends ChangeNotifier {
+  final JwtService _jwtService;
   StompClient? _stompClient;
+  bool _isConnected = false;
 
-  static String get baseUrl => 'ws://localhost:8080/ws-connect';
+  WebsocketService(this._jwtService);
 
-  void connect() {
-    if (_stompClient != null) return;
+  bool get isConnected => _isConnected;
+
+  static String get baseUrl {
+    if (kIsWeb) return 'ws://localhost:8080/kite/api/v1/ws-connect';
+    if (Platform.isAndroid) return 'ws://10.0.2.2:8080/kite/api/v1/ws-connect';
+    return 'ws://localhost:8080/kite/api/v1/ws-connect';
+  }
+
+  Future<void> connect({Function()? onConnectCallback}) async {
+    if (_isConnected && _stompClient != null) {
+      if (onConnectCallback != null) onConnectCallback();
+      return;
+    }
+
+    final token = await _jwtService.getToken();
 
     _stompClient = StompClient(
       config: StompConfig(
         url: baseUrl,
-        onConnect: _onConnect,
-        onWebSocketError: (dynamic error) => debugPrint('WS Error: $error'),
-        onStompError: (StompFrame frame) =>
-            debugPrint('STOMP Error: ${frame.body}'),
-        onDisconnect: (frame) => debugPrint('Disconnected'),
+        onConnect: (StompFrame frame) {
+          _isConnected = true;
+          debugPrint('STOMP WebSocket Connected successfully!');
+          notifyListeners();
+          if (onConnectCallback != null) onConnectCallback();
+        },
+        onWebSocketError: (dynamic error) {
+          _isConnected = false;
+          debugPrint('STOMP WS Error: $error');
+          notifyListeners();
+        },
+        onStompError: (StompFrame frame) {
+          _isConnected = false;
+          debugPrint('STOMP Error: ${frame.body}');
+          notifyListeners();
+        },
+        onDisconnect: (StompFrame frame) {
+          _isConnected = false;
+          debugPrint('STOMP Disconnected');
+          notifyListeners();
+        },
+        stompConnectHeaders: {
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
+        },
+        webSocketConnectHeaders: {
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
+        },
       ),
     );
 
     _stompClient!.activate();
   }
 
-  void _onConnect(StompFrame frame) {
-    debugPrint('Successfully connected to Spring STOMP Broker via WebSockets!');
-    listenToConversationList();
-  }
+  void Function({Map<String, String>? unsubscribeHeaders})?
+  subscribeToConversation({
+    required String conversationId,
+    required Function(MessageResponse message) onMessageReceived,
+  }) {
+    if (_stompClient == null || !_isConnected) {
+      debugPrint('Cannot subscribe: STOMP is not connected');
+      return null;
+    }
 
-  void listenToConversationList() {
-    _stompClient?.subscribe(
-      destination: '/topic/chat-list',
+    return _stompClient!.subscribe(
+      destination: '/topic/conversation.$conversationId',
       callback: (StompFrame frame) {
         if (frame.body != null) {
-          final Map<String, dynamic> data = jsonDecode(frame.body!);
-          debugPrint('Chat List Update Received: $data');
-          notifyListeners();
+          try {
+            final json = jsonDecode(frame.body!) as Map<String, dynamic>;
+            final message = MessageResponse.fromJson(json);
+            onMessageReceived(message);
+          } catch (e) {
+            debugPrint('Failed to parse STOMP message: $e');
+          }
         }
       },
     );
   }
 
-  void listenToChatRoom(String chatId) {
-    _stompClient?.subscribe(
-      destination: '/topic/chat.$chatId',
+  void Function({Map<String, String>? unsubscribeHeaders})?
+  subscribeToUserConversations({
+    required String userId,
+    required Function(Conversation conversation) onConversationUpdated,
+  }) {
+    if (_stompClient == null || !_isConnected) {
+      debugPrint('Cannot subscribe: STOMP is not connected');
+      return null;
+    }
+
+    return _stompClient!.subscribe(
+      destination: '/topic/user.$userId.conversations',
       callback: (StompFrame frame) {
         if (frame.body != null) {
-          final Map<String, dynamic> messageData = jsonDecode(frame.body!);
-          debugPrint('New message in room $chatId: $messageData');
+          try {
+            final json = jsonDecode(frame.body!) as Map<String, dynamic>;
+            final conversation = Conversation.fromJson(json);
+            onConversationUpdated(conversation);
+          } catch (e) {
+            debugPrint('Failed to parse conversation STOMP update: $e');
+          }
         }
       },
-    );
-  }
-
-  void sendMessage(String chatId, String text) {
-    _stompClient?.send(
-      destination: '/app/chat.send.$chatId',
-      body: jsonEncode({'chatId': chatId, 'message': text}),
     );
   }
 
   void disconnect() {
     _stompClient?.deactivate();
     _stompClient = null;
+    _isConnected = false;
+    notifyListeners();
   }
 
   @override

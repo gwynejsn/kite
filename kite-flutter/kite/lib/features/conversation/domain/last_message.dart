@@ -1,8 +1,11 @@
+import 'package:kite/features/conversation/domain/encrypted_payload.dart';
 import 'package:kite/features/conversation/domain/message_type.dart';
+import 'package:kite/shared/security/encryption_service.dart';
 
 class LastMessage {
   final String messageId;
   final String senderId;
+  final EncryptedPayload? encryptedPayload;
   final String content;
   final MessageType messageType;
   final DateTime timestamp;
@@ -10,6 +13,7 @@ class LastMessage {
   const LastMessage({
     required this.messageId,
     required this.senderId,
+    this.encryptedPayload,
     required this.content,
     required this.messageType,
     required this.timestamp,
@@ -23,12 +27,27 @@ class LastMessage {
   }
 
   factory LastMessage.fromJson(Map<String, dynamic> json) {
+    EncryptedPayload? payload;
+    if (json['encryptedPayload'] != null) {
+      payload = EncryptedPayload.fromJson(
+        json['encryptedPayload'] as Map<String, dynamic>,
+      );
+    }
+
+    String textContent = json['content'] as String? ?? '';
+    if (textContent.isEmpty && payload != null) {
+      textContent = payload.cipherText;
+    }
+
     return LastMessage(
       messageId: _parseId(json['messageId']),
       senderId: _parseId(json['senderId']),
-      content: json['content'] as String? ?? '',
+      encryptedPayload: payload,
+      content: textContent,
       messageType: MessageType.values.firstWhere(
-        (m) => m.name.toUpperCase() == (json['messageType'] as String?).toString().toUpperCase(),
+        (m) =>
+            m.name.toUpperCase() ==
+            (json['messageType'] as String?).toString().toUpperCase(),
         orElse: () => MessageType.text,
       ),
       timestamp: json['timestamp'] != null
@@ -37,19 +56,17 @@ class LastMessage {
     );
   }
 
-  LastMessage copyWith({
-    String? messageId,
-    String? senderId,
-    String? content,
-    MessageType? messageType,
-    DateTime? timestamp,
-  }) {
-    return LastMessage(
-      messageId: messageId ?? this.messageId,
-      senderId: senderId ?? this.senderId,
-      content: content ?? this.content,
-      messageType: messageType ?? this.messageType,
-      timestamp: timestamp ?? this.timestamp,
-    );
+  Future<String> getDecryptedContent(
+    EncryptionService encryptionService, {
+    String? currentUserId,
+  }) async {
+    if (encryptedPayload != null) {
+      final decrypted = await encryptedPayload!.decrypt(
+        encryptionService,
+        currentUserId: currentUserId,
+      );
+      if (decrypted.isNotEmpty) return decrypted;
+    }
+    return content.isNotEmpty ? content : 'Message';
   }
 }

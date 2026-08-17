@@ -1,6 +1,7 @@
 import 'package:kite/features/conversation/domain/encrypted_payload.dart';
 import 'package:kite/features/conversation/domain/message_status.dart';
 import 'package:kite/features/conversation/domain/message_type.dart';
+import 'package:kite/shared/security/encryption_service.dart';
 
 class MessageResponse {
   final String? id;
@@ -27,11 +28,17 @@ class MessageResponse {
     required this.updatedAt,
   });
 
-  String get textContent {
-    if (encryptedPayload != null && encryptedPayload!.cipherText.isNotEmpty) {
-      return encryptedPayload!.cipherText;
-    }
-    return '';
+  String get textContent => encryptedPayload?.cipherText ?? '';
+
+  Future<String> getDecryptedContent(
+    EncryptionService encryptionService, {
+    String? currentUserId,
+  }) async {
+    if (encryptedPayload == null) return '';
+    return encryptedPayload!.decrypt(
+      encryptionService,
+      currentUserId: currentUserId,
+    );
   }
 
   factory MessageResponse.fromJson(Map<String, dynamic> json) {
@@ -48,9 +55,7 @@ class MessageResponse {
       messageType: MessageType.fromString(
         json['messageType'] as String? ?? 'TEXT',
       ),
-      status: MessageStatus.fromString(
-        json['status'] as String? ?? 'SENT',
-      ),
+      status: MessageStatus.fromString(json['status'] as String? ?? 'SENT'),
       replyToMessageId: json['replyToMessageId'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
