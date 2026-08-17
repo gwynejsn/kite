@@ -229,8 +229,7 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                   ),
                   itemCount: state.messages.length,
                   itemBuilder: (context, index) {
-                    final message =
-                        state.messages[state.messages.length - 1 - index];
+                    final message = state.messages[index];
                     final isMe = message.senderId == currentUserId;
                     return _MessageBubble(
                       message: message,
