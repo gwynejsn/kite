@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 import static com.gwynejsn.kite.conversation.infrastructure.MessageMapper.INSTANCE;
@@ -39,7 +40,7 @@ public class MessageService {
         Conversation conversation = conversationService
                 .validateMember(conversationId, senderId);
 
-        Instant now = Instant.now();
+        Instant now = Instant.now().atZone(ZoneId.systemDefault()).toInstant();
         MessageId messageId = new MessageId();
 
         EncryptedPayload encryptedPayload = messageRequest.encryptedPayload();

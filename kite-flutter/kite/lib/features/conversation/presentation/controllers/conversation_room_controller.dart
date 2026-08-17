@@ -42,10 +42,9 @@ class ConversationRoomController extends ValueNotifier<ConversationRoomState> {
     if (tempIndex != -1) {
       updatedList[tempIndex] = message;
     } else {
-      updatedList.add(message);
+      updatedList.insert(0, message);
     }
 
-    // update the messages in this room
     value = value.copyWith(messages: updatedList);
   }
 
@@ -54,7 +53,9 @@ class ConversationRoomController extends ValueNotifier<ConversationRoomState> {
 
     try {
       final messages = await repository.getInitialMessages(conversationId);
-      value = value.copyWith(isLoading: false, messages: messages);
+      final sortedMessages = List<MessageResponse>.from(messages)
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      value = value.copyWith(isLoading: false, messages: sortedMessages);
     } catch (e) {
       value = value.copyWith(
         isLoading: false,
@@ -83,9 +84,9 @@ class ConversationRoomController extends ValueNotifier<ConversationRoomState> {
       updatedAt: DateTime.now(),
     );
 
-    // optimistic UI update
+    // optimistic UI update: Insert newest message at index 0
     final updatedList = List<MessageResponse>.from(value.messages)
-      ..add(tempMessage);
+      ..insert(0, tempMessage);
     value = value.copyWith(messages: updatedList);
 
     try {

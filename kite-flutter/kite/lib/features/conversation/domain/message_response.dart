@@ -42,6 +42,7 @@ class MessageResponse {
   }
 
   factory MessageResponse.fromJson(Map<String, dynamic> json) {
+    final createdAt = DateTime.parse(json['createdAt'] as String).toLocal();
     return MessageResponse(
       id: json['id'] as String?,
       conversationId: json['conversationId'] as String?,
@@ -57,9 +58,7 @@ class MessageResponse {
       ),
       status: MessageStatus.fromString(json['status'] as String? ?? 'SENT'),
       replyToMessageId: json['replyToMessageId'] as String?,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : DateTime.now(),
+      createdAt: json['createdAt'] != null ? createdAt : DateTime.now(),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : DateTime.now(),
