@@ -10,6 +10,10 @@ public record ConversationId(UUID id) implements DomainId {
         Assert.notNull(id, "id is required");
     }
 
+    public ConversationId(String conversationId) {
+        this(UUID.fromString(conversationId));
+    }
+
     public ConversationId() {
         this(UUID.randomUUID());
     }

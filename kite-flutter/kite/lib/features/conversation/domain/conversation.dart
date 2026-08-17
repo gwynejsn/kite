@@ -8,6 +8,7 @@ class Conversation {
   final String? conversationPhoto;
   final Set<String> memberIds;
   final Set<String> adminIds;
+  final Map<String, String> memberPublicKeys;
   final LastMessage? lastMessage;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -19,6 +20,7 @@ class Conversation {
     this.conversationPhoto,
     required this.memberIds,
     required this.adminIds,
+    this.memberPublicKeys = const {},
     this.lastMessage,
     required this.createdAt,
     required this.updatedAt,
@@ -33,7 +35,23 @@ class Conversation {
 
   static Set<String> _parseIdSet(dynamic list) {
     if (list is List) {
-      return list.map((item) => _parseId(item)).where((id) => id.isNotEmpty).toSet();
+      return list
+          .map((item) => _parseId(item))
+          .where((id) => id.isNotEmpty)
+          .toSet();
+    }
+    return {};
+  }
+
+  static Map<String, String> _parseMap(dynamic obj) {
+    if (obj is Map) {
+      final Map<String, String> map = {};
+      obj.forEach((key, value) {
+        if (key != null && value != null) {
+          map[key.toString()] = value.toString();
+        }
+      });
+      return map;
     }
     return {};
   }
@@ -42,13 +60,16 @@ class Conversation {
     return Conversation(
       id: _parseId(json['id']),
       type: ConversationType.values.firstWhere(
-        (t) => t.name.toUpperCase() == (json['type'] as String?).toString().toUpperCase(),
+        (t) =>
+            t.name.toUpperCase() ==
+            (json['type'] as String?).toString().toUpperCase(),
         orElse: () => ConversationType.direct,
       ),
       name: json['name'] as String?,
       conversationPhoto: json['conversationPhoto'] as String?,
       memberIds: _parseIdSet(json['memberIds']),
       adminIds: _parseIdSet(json['adminIds']),
+      memberPublicKeys: _parseMap(json['memberPublicKeys']),
       lastMessage: json['lastMessage'] != null
           ? LastMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
           : null,
@@ -68,6 +89,7 @@ class Conversation {
     String? conversationPhoto,
     Set<String>? memberIds,
     Set<String>? adminIds,
+    Map<String, String>? memberPublicKeys,
     LastMessage? lastMessage,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -79,6 +101,7 @@ class Conversation {
       conversationPhoto: conversationPhoto ?? this.conversationPhoto,
       memberIds: memberIds ?? this.memberIds,
       adminIds: adminIds ?? this.adminIds,
+      memberPublicKeys: memberPublicKeys ?? this.memberPublicKeys,
       lastMessage: lastMessage ?? this.lastMessage,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

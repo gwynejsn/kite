@@ -26,7 +26,10 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Me', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Profile',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
         centerTitle: false,
         actions: [
@@ -43,6 +46,7 @@ class ProfilePage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // display error if any
           if (provider.errorMessage != null) {
             return Center(
               child: Padding(
@@ -59,7 +63,9 @@ class ProfilePage extends StatelessWidget {
                     Text(
                       provider.errorMessage!,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -74,6 +80,7 @@ class ProfilePage extends StatelessWidget {
           }
 
           final profile = provider.userProfile;
+          // profile is not loaded (but should be automatically loaded in the login_page)
           if (profile == null) {
             return Center(
               child: ElevatedButton.icon(
@@ -104,7 +111,9 @@ class ProfilePage extends StatelessWidget {
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.error,
-                      side: BorderSide(color: Theme.of(context).colorScheme.error),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -134,7 +143,8 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fullName = '${profile.firstName} ${profile.lastName}'.trim();
-    final initials = (profile.firstName.isNotEmpty ? profile.firstName[0] : '') +
+    final initials =
+        (profile.firstName.isNotEmpty ? profile.firstName[0] : '') +
         (profile.lastName.isNotEmpty ? profile.lastName[0] : '');
 
     return Column(
@@ -176,9 +186,9 @@ class _ProfileHeader extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           fullName.isNotEmpty ? fullName : profile.username,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
@@ -193,6 +203,7 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
+// TODO: convert this into a stateful widget, make it editable
 class _ProfileInfoCard extends StatelessWidget {
   final UserProfile profile;
 
@@ -203,10 +214,14 @@ class _ProfileInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -221,13 +236,16 @@ class _ProfileInfoCard extends StatelessWidget {
           _InfoTile(
             icon: Icons.wc_rounded,
             label: 'Gender',
-            value: profile.gender.name[0].toUpperCase() + profile.gender.name.substring(1),
+            value:
+                profile.gender.name[0].toUpperCase() +
+                profile.gender.name.substring(1),
           ),
           const Divider(height: 24),
           _InfoTile(
             icon: Icons.palette_outlined,
             label: 'Preferred Theme',
-            value: profile.preferredTheme.name[0].toUpperCase() +
+            value:
+                profile.preferredTheme.name[0].toUpperCase() +
                 profile.preferredTheme.name.substring(1),
           ),
         ],

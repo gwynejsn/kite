@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kite/shared/networks/auth_interceptor.dart';
@@ -9,8 +7,6 @@ class DioClient {
   late final Dio _dio;
 
   static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:8080/kite/api/v1';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8080/kite/api/v1';
     return 'http://localhost:8080/kite/api/v1';
   }
 

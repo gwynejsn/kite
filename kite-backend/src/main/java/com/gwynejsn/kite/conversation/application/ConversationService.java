@@ -6,8 +6,11 @@ import com.gwynejsn.kite.conversation.domain.Conversation;
 import com.gwynejsn.kite.conversation.domain.ConversationId;
 import com.gwynejsn.kite.conversation.domain.enums.ConversationType;
 import com.gwynejsn.kite.conversation.infrastructure.ConversationRepo;
+import com.gwynejsn.kite.conversation.infrastructure.exceptions.ConversationNotFoundException;
+import com.gwynejsn.kite.conversation.infrastructure.exceptions.UserIsNotAMemberException;
 import com.gwynejsn.kite.profile.api.UserProfileResponse;
 import com.gwynejsn.kite.profile.api.UserProfileServiceApi;
+import com.gwynejsn.kite.security.api.UserKeyServiceApi;
 import com.gwynejsn.kite.shared.domain.UserId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -27,6 +31,7 @@ public class ConversationService implements ConversationServiceApi {
 
     private final ConversationRepo conversationRepo;
     private final UserProfileServiceApi userProfileService;
+    private final UserKeyServiceApi userKeyService;
 
     public List<ConversationResponse> getAllConversations(UserId currentId) {
         log.info("Get all conversations for user {}", currentId);
@@ -39,24 +44,26 @@ public class ConversationService implements ConversationServiceApi {
                 .toList();
     }
 
-    public ConversationResponse findDirectConversation(UserId currentId, UserId recipientId) {
-        log.debug("Find or create direct conversation for {} to {}", currentId, recipientId);
+    public ConversationResponse getConversationForUser(ConversationId conversationId, UserId currentUserId) {
         Conversation conversation = conversationRepo
-                .findByDirectMembers(currentId, recipientId)
-                .orElseGet(() -> {
-                    log.info("Creating new direct conversation between {} and {}", currentId, recipientId);
-                    Instant now = Instant.now();
-                    Conversation newConv = Conversation.builder()
-                            .id(new ConversationId())
-                            .type(ConversationType.DIRECT)
-                            .memberIds(Set.of(currentId, recipientId))
-                            .createdAt(now)
-                            .updatedAt(now)
-                            .build();
-                    return conversationRepo.save(newConv);
-                });
+                .findConversationById(conversationId)
+                .orElseThrow(() -> new ConversationNotFoundException(conversationId.id().toString()));
+        return mapToResponse(conversation, currentUserId);
+    }
 
-        return mapToResponse(conversation, currentId);
+    public void updateConversation(Conversation conversation) {
+        conversationRepo.save(conversation);
+    }
+
+    public Conversation validateMember(ConversationId conversationId, UserId currentUserId) {
+        Conversation conversation = conversationRepo
+                .findConversationById(conversationId)
+                .orElseThrow(() -> new ConversationNotFoundException(conversationId.id().toString()));
+
+        if (!conversation.getMemberIds().contains(currentUserId)) {
+            throw new UserIsNotAMemberException("User is not a member of conversation");
+        }
+        return conversation;
     }
 
     @Override
@@ -82,42 +89,47 @@ public class ConversationService implements ConversationServiceApi {
     }
 
     /**
-     * helper that resolves name & photo for DIRECT chats based on currentUserId
+     * helper that resolves name, photo, and member public keys
      */
     private ConversationResponse mapToResponse(Conversation conversation, UserId currentUserId) {
         ConversationResponse baseResponse = INSTANCE.toConversationResponse(conversation);
+        // <id, public key>
+        Map<String, String> memberPublicKeys = userKeyService.getPublicKeysByUserIds(conversation.getMemberIds());
 
+        String name = baseResponse.name();
+        String profilePhoto = baseResponse.conversationPhoto();
+
+        // maps the user's profile picture and name appropriately if 1-1 chat
         if (conversation.getType() == ConversationType.DIRECT) {
             Optional<UserId> otherMember = conversation.getMemberIds().stream()
                     .filter(id -> !id.equals(currentUserId))
                     .findFirst();
 
-            // set the name and profile pic to the other member
-            // perhaps another alternative to this in the future is to store separately conversations for direct / one-on-one
             if (otherMember.isPresent()) {
                 try {
                     UserProfileResponse profile = userProfileService.getUserProfile(otherMember.get());
-                    String name = (profile.firstName() + " " + profile.lastName()).trim();
+                    name = (profile.firstName() + " " + profile.lastName()).trim();
                     if (name.isEmpty()) {
                         name = profile.username();
                     }
-                    return new ConversationResponse(
-                            baseResponse.id(),
-                            baseResponse.type(),
-                            name,
-                            profile.profileImageLink(),
-                            baseResponse.memberIds(),
-                            baseResponse.adminIds(),
-                            baseResponse.lastMessage(),
-                            baseResponse.createdAt(),
-                            baseResponse.updatedAt()
-                    );
+                    profilePhoto = profile.profileImageLink();
                 } catch (Exception e) {
                     log.warn("Could not fetch profile for user {}", otherMember.get());
                 }
             }
         }
 
-        return baseResponse;
+        return new ConversationResponse(
+                baseResponse.id(),
+                baseResponse.type(),
+                name,
+                profilePhoto,
+                baseResponse.memberIds(),
+                baseResponse.adminIds(),
+                memberPublicKeys,
+                baseResponse.lastMessage(),
+                baseResponse.createdAt(),
+                baseResponse.updatedAt()
+        );
     }
 }

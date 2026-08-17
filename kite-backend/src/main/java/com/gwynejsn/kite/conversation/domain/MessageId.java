@@ -13,4 +13,8 @@ public record MessageId(UUID id) implements DomainId {
     public MessageId() {
         this(UUID.randomUUID());
     }
+
+    public MessageId(String id) {
+        this(UUID.fromString(id));
+    }
 }

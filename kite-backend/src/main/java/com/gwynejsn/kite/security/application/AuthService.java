@@ -79,7 +79,7 @@ public class AuthService {
                 .userId(userCreated.getId())
                 .firstName(user.firstName())
                 .lastName(user.lastName())
-                .username(user.email().replace('@', '.')) // default username is the email but with a dot
+                .username(user.email().replace('@', '.').substring(0, user.email().length() - 4 )) // default username is the email but with a dot and without the .com
                 .gender(user.gender())
                 .bio(user.bio())
                 .profileImageLink(user.profileImageLink())

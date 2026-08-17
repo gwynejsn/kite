@@ -16,7 +16,7 @@ import java.time.Instant;
 public class LastMessage {
     private MessageId messageId;
     private UserId senderId;
-    private String content;
+    private EncryptedPayload encryptedPayload;
     private MessageType messageType;
     private Instant timestamp;
 }

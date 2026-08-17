@@ -41,6 +41,8 @@ dependencies:
   get_it: ^9.2.1
   provider: ^6.1.5+1
   dio: ^5.11.0
+  web_socket_channel: ^3.0.3
+  stomp_dart_client: ^3.0.1
 
 dev_dependencies:
   flutter_test:

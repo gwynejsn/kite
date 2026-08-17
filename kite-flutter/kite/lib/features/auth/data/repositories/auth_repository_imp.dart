@@ -18,6 +18,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> login({required String email, required String password}) async {
+    await _encryptionService.initAndGetPublicKey();
+
     final Map<String, dynamic> result = await _authDataSource.login(
       email,
       password,
