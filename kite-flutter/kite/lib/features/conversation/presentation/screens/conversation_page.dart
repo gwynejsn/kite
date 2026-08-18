@@ -3,6 +3,7 @@ import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_state.dart';
 import 'package:kite/features/conversation/presentation/screens/conversation_room_page.dart';
+import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
@@ -29,6 +30,18 @@ class _ConversationPageState extends State<ConversationPage> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _syncPresences(ConversationState state, String? currentUserId) {
+    if (state.conversations.isNotEmpty && currentUserId != null) {
+      final memberIds = state.conversations
+          .expand((c) => c.memberIds)
+          .where((id) => id != currentUserId && id.isNotEmpty)
+          .toSet();
+      if (memberIds.isNotEmpty) {
+        context.read<PresenceProvider>().fetchAndTrackPresences(memberIds);
+      }
+    }
   }
 
   @override
@@ -59,6 +72,8 @@ class _ConversationPageState extends State<ConversationPage> {
       body: ValueListenableBuilder<ConversationState>(
         valueListenable: _controller,
         builder: (context, state, child) {
+          _syncPresences(state, userId);
+
           if (state.isLoading && state.conversations.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -141,26 +156,52 @@ class _ConversationTile extends StatelessWidget {
 
     final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
 
+    final isOnline = context.watch<PresenceProvider>().isAnyMemberOnline(
+          conversation.memberIds,
+          currentUserId,
+        );
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(
-        radius: 26,
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        backgroundImage: conversation.conversationPhoto != null &&
-                conversation.conversationPhoto!.isNotEmpty
-            ? NetworkImage(conversation.conversationPhoto!)
-            : null,
-        child: conversation.conversationPhoto == null ||
-                conversation.conversationPhoto!.isEmpty
-            ? Text(
-                initials,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+      leading: Stack(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            backgroundImage: conversation.conversationPhoto != null &&
+                    conversation.conversationPhoto!.isNotEmpty
+                ? NetworkImage(conversation.conversationPhoto!)
+                : null,
+            child: conversation.conversationPhoto == null ||
+                    conversation.conversationPhoto!.isEmpty
+                ? Text(
+                    initials,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  )
+                : null,
+          ),
+          if (isOnline)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.surface,
+                    width: 2.5,
+                  ),
                 ),
-              )
-            : null,
+              ),
+            ),
+        ],
       ),
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
