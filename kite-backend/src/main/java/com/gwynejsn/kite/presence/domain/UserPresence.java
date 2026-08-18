@@ -23,6 +23,5 @@ public class UserPresence {
     private UserId userId;
     private PresenceStatus status;
     private Instant lastSeenAt;
-    private String customStatus;
     private Instant updatedAt;
 }
