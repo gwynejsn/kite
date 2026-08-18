@@ -4,4 +4,5 @@ import com.gwynejsn.kite.shared.domain.UserId;
 import lombok.Builder;
 
 @Builder
-public record UserDeletedEvent(UserId userId) {}
+public record UserLoginEvent (UserId userId)
+{ }

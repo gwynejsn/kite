@@ -7,6 +7,8 @@ import com.gwynejsn.kite.security.application.dto.LoginUserResponse;
 import com.gwynejsn.kite.security.application.dto.RefreshTokenResponse;
 import com.gwynejsn.kite.security.application.exceptions.UserAlreadyExistsException;
 import com.gwynejsn.kite.security.domain.User;
+import com.gwynejsn.kite.security.domain.events.UserLoginEvent;
+import com.gwynejsn.kite.security.domain.events.UserLogoutEvent;
 import com.gwynejsn.kite.security.domain.events.UserRegisteredEvent;
 import com.gwynejsn.kite.security.infrastructure.JwtService;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;
@@ -53,6 +55,12 @@ public class AuthService {
         log.info("Logged in user: {}", user);
         String jwtToken = jwtService.generateToken(user.getEmail());
         GeneratedRefreshToken generatedRefreshToken = refreshTokenService.generateRefreshToken(user.getId());
+        eventPublisher.publishEvent(
+                UserLoginEvent
+                        .builder()
+                        .userId(user.getId())
+                        .build()
+        );
         return LoginUserResponse.builder().token(jwtToken).refreshToken(generatedRefreshToken.rawToken()).statusCode(HttpStatus.OK).build();
     }
 
@@ -89,8 +97,13 @@ public class AuthService {
     }
 
     @Transactional
-    public void logoutUser(String refreshToken) {
+    public void logoutUser(String refreshToken, UserId currentUserId) {
         refreshTokenService.invalidateRefreshToken(refreshToken);
+        eventPublisher.publishEvent(UserLogoutEvent
+                .builder()
+                .userId(currentUserId)
+                .build()
+        );
     }
 
     @Transactional

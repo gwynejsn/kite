@@ -6,18 +6,16 @@ import com.gwynejsn.kite.profile.domain.UserProfileId;
 import com.gwynejsn.kite.security.domain.events.UserRegisteredEvent;
 import com.gwynejsn.kite.security.domain.events.UserDeletedEvent;
 import com.gwynejsn.kite.shared.enums.PreferredTheme;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class UserEventListener {
+@RequiredArgsConstructor
+public class UserProfileEventListener {
     private final UserProfileService userProfileService;
-
-    public UserEventListener(UserProfileService userProfileService) {
-        this.userProfileService = userProfileService;
-    }
 
     /**
      * Create a User profile for the user created

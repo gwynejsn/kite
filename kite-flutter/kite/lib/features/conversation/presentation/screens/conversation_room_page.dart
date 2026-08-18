@@ -3,6 +3,7 @@ import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/domain/message_response.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_state.dart';
+import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
@@ -72,6 +73,11 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
         .userProfile
         ?.userId;
 
+    final isOnline = context.watch<PresenceProvider>().isAnyMemberOnline(
+      widget.conversation.memberIds,
+      currentUserId,
+    );
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
@@ -113,14 +119,23 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Text(
-                    'Active now',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  isOnline
+                      ? Text(
+                          'Active now',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        )
+                      : Text(
+                          'Offline',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ],
               ),
             ),

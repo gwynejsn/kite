@@ -11,6 +11,8 @@ import 'package:kite/features/conversation/data/repositories/conversation_reposi
 import 'package:kite/features/conversation/domain/repositories/conversation_repository.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_controller.dart';
+import 'package:kite/features/presence/data/presence_datasource.dart';
+import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/social/data/datasources/social_datasource.dart';
 import 'package:kite/features/social/data/repositories/social_repository_impl.dart';
 import 'package:kite/features/social/domain/repositories/social_repository.dart';
@@ -31,7 +33,9 @@ void initDependencies() {
   sl.registerLazySingleton<DioClient>(() => DioClient(sl<JwtService>()));
   sl.registerLazySingleton<Dio>(() => sl<DioClient>().dio);
 
-  sl.registerLazySingleton<WebsocketService>(() => WebsocketService(sl<JwtService>()));
+  sl.registerLazySingleton<WebsocketService>(
+    () => WebsocketService(sl<JwtService>()),
+  );
 
   sl.registerLazySingleton<AuthDataSource>(() => AuthDataSource(sl<Dio>()));
 
@@ -61,7 +65,20 @@ void initDependencies() {
     ),
   );
 
-  sl.registerLazySingleton<SocialDatasource>(() => SocialDatasource(sl<Dio>()));
+  sl.registerLazySingleton<PresenceDatasource>(
+    () => PresenceDatasource(sl<Dio>()),
+  );
+
+  sl.registerLazySingleton<PresenceProvider>(
+    () => PresenceProvider(
+      sl<PresenceDatasource>(),
+      sl<WebsocketService>(),
+    ),
+  );
+
+  sl.registerLazySingleton<SocialDatasource>(
+    () => SocialDatasource(sl<Dio>()),
+  );
 
   sl.registerLazySingleton<SocialRepository>(
     () => SocialRepositoryImpl(sl<SocialDatasource>()),

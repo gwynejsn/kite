@@ -120,6 +120,31 @@ class WebsocketService extends ChangeNotifier {
     );
   }
 
+  void Function({Map<String, String>? unsubscribeHeaders})?
+  subscribeToUserPresence({
+    required String userId,
+    required Function(Map<String, dynamic> json) onPresenceUpdated,
+  }) {
+    if (_stompClient == null || !_isConnected) {
+      debugPrint('Cannot subscribe to presence: STOMP is not connected');
+      return null;
+    }
+
+    return _stompClient!.subscribe(
+      destination: '/topic/presence.$userId',
+      callback: (StompFrame frame) {
+        if (frame.body != null) {
+          try {
+            final json = jsonDecode(frame.body!) as Map<String, dynamic>;
+            onPresenceUpdated(json);
+          } catch (e) {
+            debugPrint('Failed to parse presence STOMP update: $e');
+          }
+        }
+      },
+    );
+  }
+
   void disconnect() {
     _stompClient?.deactivate();
     _stompClient = null;
