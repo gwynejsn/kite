@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/social/domain/relation_status.dart';
 import 'package:kite/features/social/domain/user_discovery.dart';
 import 'package:kite/features/social/presentation/controllers/social_controller.dart';
 import 'package:kite/features/social/presentation/controllers/social_state.dart';
 import 'package:kite/shared/di/injection_container.dart';
+import 'package:provider/provider.dart';
 
 class SocialPage extends StatefulWidget {
   const SocialPage({super.key});
@@ -32,6 +34,18 @@ class _SocialPageState extends State<SocialPage>
     super.dispose();
   }
 
+  void _syncPresences(SocialState state) {
+    if (state.people.isNotEmpty) {
+      final friendIds = state.people
+          .where((p) => p.relationStatus == RelationStatus.accepted)
+          .map((p) => p.userId)
+          .toSet();
+      if (friendIds.isNotEmpty) {
+        context.read<PresenceProvider>().fetchAndTrackPresences(friendIds);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,6 +67,8 @@ class _SocialPageState extends State<SocialPage>
       body: ValueListenableBuilder<SocialState>(
         valueListenable: _controller,
         builder: (context, state, child) {
+          _syncPresences(state);
+
           if (state.isLoading && state.people.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -136,16 +152,13 @@ class _UserListView extends StatelessWidget {
     required this.controller,
   });
 
-  // dragging down will refresh using the refreshIndicator
   @override
   Widget build(BuildContext context) {
     if (users.isEmpty) {
       return RefreshIndicator(
         onRefresh: () => controller.fetchPeople(),
         child: ListView(
-          // this makes the list scrollable even if the list is short
           physics: const AlwaysScrollableScrollPhysics(),
-          // if the users is empty, show the logo and message
           children: [
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.5,
@@ -207,6 +220,9 @@ class _UserCard extends StatelessWidget {
         ? nameDisplay[0].toUpperCase()
         : 'U';
 
+    final isOnline = user.relationStatus == RelationStatus.accepted &&
+        context.watch<PresenceProvider>().isUserOnline(user.userId);
+
     return Card(
       elevation: 0.5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -214,22 +230,46 @@ class _UserCard extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              backgroundImage: user.profileImageLink.isNotEmpty
-                  ? NetworkImage(user.profileImageLink)
-                  : null,
-              child: user.profileImageLink.isEmpty
-                  ? Text(
-                      initials,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  backgroundImage: user.profileImageLink.isNotEmpty
+                      ? NetworkImage(user.profileImageLink)
+                      : null,
+                  child: user.profileImageLink.isEmpty
+                      ? Text(
+                          initials,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
+                        )
+                      : null,
+                ),
+                if (isOnline)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.surface,
+                          width: 2.5,
+                        ),
                       ),
-                    )
-                  : null,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 14),
             Expanded(

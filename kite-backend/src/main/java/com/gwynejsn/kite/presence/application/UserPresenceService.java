@@ -1,6 +1,7 @@
 package com.gwynejsn.kite.presence.application;
 
 import com.gwynejsn.kite.presence.application.dto.UserPresenceResponse;
+import com.gwynejsn.kite.presence.application.exceptions.UserPresenceNotFound;
 import com.gwynejsn.kite.presence.domain.PresenceId;
 import com.gwynejsn.kite.presence.domain.UserPresence;
 import com.gwynejsn.kite.presence.domain.enums.PresenceStatus;
@@ -11,12 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import static com.gwynejsn.kite.presence.infrastructure.UserPresenceMapper.INSTANCE;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.gwynejsn.kite.presence.infrastructure.UserPresenceMapper.INSTANCE;
 
 @Service
 @RequiredArgsConstructor
@@ -39,11 +42,26 @@ public class UserPresenceService {
     }
 
     public Map<String, UserPresenceResponse> getPresencesByUserIds(Set<UserId> userIds) {
-        return userPresenceRepo.findAllById(userIds.stream().map(UserId::id).toList()).stream()
+        List<UserPresence> found = userPresenceRepo.findByUserIdIn(userIds.stream().toList());
+        Map<String, UserPresenceResponse> map = found.stream()
                 .collect(Collectors.toMap(
                         p -> p.getUserId().id().toString(),
                         INSTANCE::toResponse
                 ));
+
+        for (UserId uId : userIds) {
+            String strId = uId.id().toString();
+            if (!map.containsKey(strId)) {
+                map.put(strId, new UserPresenceResponse(
+                        new PresenceId(),
+                        uId,
+                        PresenceStatus.OFFLINE,
+                        Instant.now(),
+                        Instant.now()
+                ));
+            }
+        }
+        return map;
     }
 
     @Transactional
