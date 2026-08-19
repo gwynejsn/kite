@@ -316,8 +316,11 @@ class _UserCard extends StatelessWidget {
     return Card(
       elevation: 0.5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showUserProfileModal(context, user, isOnline, controller),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
             Stack(
@@ -403,8 +406,9 @@ class _UserCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildActionButtons(BuildContext context) {
     // 1. Discover Tab (Not Connected)
@@ -553,6 +557,302 @@ class _SocialSkeletonList extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+void _showUserProfileModal(
+  BuildContext context,
+  UserDiscovery user,
+  bool isOnline,
+  SocialController controller,
+) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => _UserProfileDetailSheet(
+      user: user,
+      isOnline: isOnline,
+      controller: controller,
+    ),
+  );
+}
+
+class _UserProfileDetailSheet extends StatelessWidget {
+  final UserDiscovery user;
+  final bool isOnline;
+  final SocialController controller;
+
+  const _UserProfileDetailSheet({
+    required this.user,
+    required this.isOnline,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fullName = '${user.firstName} ${user.lastName}'.trim();
+    final nameDisplay = fullName.isNotEmpty ? fullName : user.username;
+    final initials =
+        nameDisplay.isNotEmpty ? nameDisplay[0].toUpperCase() : 'U';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag Handle
+          Container(
+            width: 38,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // User Avatar Hero
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 3,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 46,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  backgroundImage: user.profileImageLink.isNotEmpty
+                      ? NetworkImage(user.profileImageLink)
+                      : null,
+                  child: user.profileImageLink.isEmpty
+                      ? Text(
+                          initials,
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+              if (isOnline)
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.surface,
+                      width: 3,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Full Name & Username
+          Text(
+            nameDisplay,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '@${user.username}',
+            style: TextStyle(
+              fontSize: 15,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Bio Section Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .outlineVariant
+                    .withValues(alpha: 0.4),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'About',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  user.bio.isNotEmpty ? user.bio : 'No bio added yet.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // E2EE Member Chip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .primary
+                  .withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.shield_outlined,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'End-to-End Encrypted Member',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Action Buttons
+          Row(
+            children: [
+              if (user.relationStatus == RelationStatus.accepted) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () {
+                      controller.blockUser(user.userId);
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.block_rounded, color: Colors.red),
+                    label: const Text(
+                      'Block',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+                ),
+              ] else if (user.relationStatus == null) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () {
+                      controller.sendFriendRequest(user.userId);
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.person_add_rounded),
+                    label: const Text(
+                      'Add Friend',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ] else if (user.relationStatus == RelationStatus.pending &&
+                  user.isRequester != true) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: user.relationId != null
+                        ? () {
+                            controller.acceptFriendRequest(user.relationId!);
+                            Navigator.pop(context);
+                          }
+                        : null,
+                    icon: const Icon(Icons.check_circle_rounded,
+                        color: Colors.white),
+                    label: const Text(
+                      'Accept Request',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }
