@@ -71,14 +71,37 @@ class _SocialPageState extends State<SocialPage>
               'People',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
             ),
-            bottom: TabBar(
-              controller: _tabController,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-              tabs: [
-                const Tab(text: 'Discover'),
-                Tab(text: requestsTabTitle),
-                const Tab(text: 'Friends'),
-              ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  labelColor: Theme.of(context).colorScheme.onPrimary,
+                  unselectedLabelColor:
+                      Theme.of(context).colorScheme.onSurfaceVariant,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  dividerColor: Colors.transparent,
+                  tabs: [
+                    const Tab(text: 'Discover'),
+                    Tab(text: requestsTabTitle),
+                    const Tab(text: 'Friends'),
+                  ],
+                ),
+              ),
             ),
           ),
           body: Builder(
@@ -129,23 +152,68 @@ class _SocialPageState extends State<SocialPage>
                   .where((p) => p.relationStatus == RelationStatus.accepted)
                   .toList();
 
-              return TabBarView(
-                controller: _tabController,
+              final presenceProvider = context.watch<PresenceProvider>();
+              final activeFriendsCount = friendsList
+                  .where((p) => presenceProvider.isUserOnline(p.userId))
+                  .length;
+
+              return Column(
                 children: [
-                  _UserListView(
-                    users: discoverList,
-                    emptyMessage: 'No new people to discover right now.',
-                    controller: _controller,
-                  ),
-                  _UserListView(
-                    users: requestsList,
-                    emptyMessage: 'No pending friend requests.',
-                    controller: _controller,
-                  ),
-                  _UserListView(
-                    users: friendsList,
-                    emptyMessage: 'You have not added any friends yet.',
-                    controller: _controller,
+                  if (activeFriendsCount > 0)
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.bolt_rounded,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$activeFriendsCount ${activeFriendsCount == 1 ? "friend" : "friends"} active right now',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _UserListView(
+                          users: discoverList,
+                          emptyMessage: 'No new people to discover right now.',
+                          controller: _controller,
+                        ),
+                        _UserListView(
+                          users: requestsList,
+                          emptyMessage: 'No pending friend requests.',
+                          controller: _controller,
+                        ),
+                        _UserListView(
+                          users: friendsList,
+                          emptyMessage:
+                              'No friends added yet. Discover people to connect!',
+                          controller: _controller,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               );

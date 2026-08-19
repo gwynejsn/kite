@@ -120,10 +120,14 @@ class ProfilePage extends StatelessWidget {
                   onEdit: () => _showEditProfileModal(context, profile),
                 ),
                 const SizedBox(height: 24),
-                _ProfileInfoCard(
+                _AccountInfoCard(
                   profile: profile,
                   onEdit: () => _showEditProfileModal(context, profile),
                 ),
+                const SizedBox(height: 16),
+                _AppPreferencesCard(profile: profile),
+                const SizedBox(height: 16),
+                _SecurityCard(profile: profile),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -232,11 +236,11 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-class _ProfileInfoCard extends StatelessWidget {
+class _AccountInfoCard extends StatelessWidget {
   final UserProfile profile;
   final VoidCallback onEdit;
 
-  const _ProfileInfoCard({required this.profile, required this.onEdit});
+  const _AccountInfoCard({required this.profile, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +288,40 @@ class _ProfileInfoCard extends StatelessWidget {
                 profile.gender.name[0].toUpperCase() +
                 profile.gender.name.substring(1),
           ),
-          const Divider(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppPreferencesCard extends StatelessWidget {
+  final UserProfile profile;
+
+  const _AppPreferencesCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'App Preferences',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -308,6 +345,76 @@ class _ProfileInfoCard extends StatelessWidget {
               _ThemeSegmentedToggle(
                 currentTheme: profile.preferredTheme,
                 profile: profile,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecurityCard extends StatelessWidget {
+  final UserProfile profile;
+
+  const _SecurityCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Security & Encryption',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(
+                Icons.security_rounded,
+                size: 22,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'End-to-End Encryption',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'X25519 & AES-256 Active',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.check_circle_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
               ),
             ],
           ),

@@ -472,6 +472,13 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                   ),
                   onPressed: () {},
                 ),
+                IconButton(
+                  icon: Icon(
+                    Icons.mic_none_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  onPressed: () {},
+                ),
                 Expanded(
                   child: TextField(
                     controller: _textController,

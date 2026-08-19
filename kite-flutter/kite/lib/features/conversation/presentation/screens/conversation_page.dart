@@ -5,6 +5,8 @@ import 'package:kite/features/conversation/presentation/controllers/conversation
 import 'package:kite/features/conversation/presentation/screens/conversation_room_page.dart';
 import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
+import 'package:kite/features/social/domain/user_discovery.dart';
+import 'package:kite/features/social/presentation/controllers/social_controller.dart';
 import 'package:kite/features/social/presentation/screens/social_page.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
@@ -170,20 +172,37 @@ class _ConversationPageState extends State<ConversationPage> {
           return RefreshIndicator(
             onRefresh: () =>
                 _controller.fetchConversations(currentUserId: userId),
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              itemCount: filteredConversations.length,
-              separatorBuilder: (_, _) =>
-                  const Divider(height: 1, indent: 76),
-              itemBuilder: (context, index) {
-                return _ConversationTile(
-                  conversation: filteredConversations[index],
-                  currentUserId: userId,
-                );
-              },
+            child: ListView(
+              children: [
+                _ActiveFriendsHorizontalBar(currentUserId: userId),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  itemCount: filteredConversations.length,
+                  separatorBuilder: (_, _) =>
+                      const Divider(height: 1, indent: 76),
+                  itemBuilder: (context, index) {
+                    return _ConversationTile(
+                      conversation: filteredConversations[index],
+                      currentUserId: userId,
+                    );
+                  },
+                ),
+              ],
             ),
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'New Conversation',
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SocialPage()),
+          );
+        },
+        child: const Icon(Icons.chat_rounded),
       ),
     );
   }
@@ -499,6 +518,118 @@ class _ConversationSkeletonList extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _ActiveFriendsHorizontalBar extends StatelessWidget {
+  final String? currentUserId;
+
+  const _ActiveFriendsHorizontalBar({required this.currentUserId});
+
+  @override
+  Widget build(BuildContext context) {
+    List<UserDiscovery> people = [];
+    try {
+      people = sl<SocialController>().value.people;
+    } catch (_) {}
+
+    final presenceProvider = context.watch<PresenceProvider>();
+    final onlinePeople = people.where((p) {
+      return p.userId != currentUserId && presenceProvider.isUserOnline(p.userId);
+    }).toList();
+
+    if (onlinePeople.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 16, top: 12, bottom: 8),
+          child: Text(
+            'ACTIVE NOW',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.1,
+              color: Colors.grey,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 86,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: onlinePeople.length,
+            itemBuilder: (context, index) {
+              final user = onlinePeople[index];
+              final name = '${user.firstName} ${user.lastName}'.trim();
+              final displayName = name.isNotEmpty ? name : user.username;
+              final initials =
+                  displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+
+              return Container(
+                width: 68,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          backgroundImage: user.profileImageLink.isNotEmpty
+                              ? NetworkImage(user.profileImageLink)
+                              : null,
+                          child: user.profileImageLink.isEmpty
+                              ? Text(
+                                  initials,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.surface,
+                              width: 2.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      displayName.split(' ')[0],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const Divider(height: 1),
+      ],
     );
   }
 }
