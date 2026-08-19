@@ -5,6 +5,7 @@ import 'package:kite/features/social/domain/user_discovery.dart';
 import 'package:kite/features/social/presentation/controllers/social_controller.dart';
 import 'package:kite/features/social/presentation/controllers/social_state.dart';
 import 'package:kite/shared/di/injection_container.dart';
+import 'package:kite/shared/widgets/skeleton_loader.dart';
 import 'package:provider/provider.dart';
 
 class SocialPage extends StatefulWidget {
@@ -48,95 +49,184 @@ class _SocialPageState extends State<SocialPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'People',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          tabs: const [
-            Tab(text: 'Discover'),
-            Tab(text: 'Requests'),
-            Tab(text: 'Friends'),
-          ],
-        ),
-      ),
-      body: ValueListenableBuilder<SocialState>(
-        valueListenable: _controller,
-        builder: (context, state, child) {
-          _syncPresences(state);
+    return ValueListenableBuilder<SocialState>(
+      valueListenable: _controller,
+      builder: (context, state, child) {
+        _syncPresences(state);
 
-          if (state.isLoading && state.people.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        final pendingCount = state.people
+            .where(
+              (p) =>
+                  p.relationStatus == RelationStatus.pending &&
+                  p.isRequester != true,
+            )
+            .length;
 
-          if (state.errorMessage != null && state.people.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.error,
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text(
+              'People',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.center,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  labelColor: Theme.of(context).colorScheme.onPrimary,
+                  unselectedLabelColor:
+                      Theme.of(context).colorScheme.onSurfaceVariant,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  dividerColor: Colors.transparent,
+                  tabs: [
+                    const Tab(text: 'Discover'),
+                    Tab(
+                      text: pendingCount > 0
+                          ? 'Requests ($pendingCount)'
+                          : 'Requests',
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      state.errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () => _controller.fetchPeople(),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
-                    ),
+                    const Tab(text: 'Friends'),
                   ],
                 ),
               ),
-            );
-          }
+            ),
+          ),
+          body: Builder(
+            builder: (context) {
+              if (state.isLoading && state.people.isEmpty) {
+                return const _SocialSkeletonList();
+              }
 
-          final discoverList = state.people
-              .where((p) => p.relationStatus == null)
-              .toList();
-          final requestsList = state.people
-              .where((p) => p.relationStatus == RelationStatus.pending)
-              .toList();
-          final friendsList = state.people
-              .where((p) => p.relationStatus == RelationStatus.accepted)
-              .toList();
+              if (state.errorMessage != null && state.people.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          state.errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => _controller.fetchPeople(),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _UserListView(
-                users: discoverList,
-                emptyMessage: 'No new people to discover right now.',
-                controller: _controller,
-              ),
-              _UserListView(
-                users: requestsList,
-                emptyMessage: 'No pending friend requests.',
-                controller: _controller,
-              ),
-              _UserListView(
-                users: friendsList,
-                emptyMessage: 'You have not added any friends yet.',
-                controller: _controller,
-              ),
-            ],
-          );
-        },
-      ),
+              final discoverList = state.people
+                  .where((p) => p.relationStatus == null)
+                  .toList();
+              final requestsList = state.people
+                  .where((p) => p.relationStatus == RelationStatus.pending)
+                  .toList();
+              final friendsList = state.people
+                  .where((p) => p.relationStatus == RelationStatus.accepted)
+                  .toList();
+
+              final presenceProvider = context.watch<PresenceProvider>();
+              final activeFriendsCount = friendsList
+                  .where((p) => presenceProvider.isUserOnline(p.userId))
+                  .length;
+
+              return Column(
+                children: [
+                  if (activeFriendsCount > 0)
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.bolt_rounded,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$activeFriendsCount ${activeFriendsCount == 1 ? "friend" : "friends"} active right now',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _UserListView(
+                          users: discoverList,
+                          emptyMessage: 'No new people to discover right now.',
+                          controller: _controller,
+                        ),
+                        _UserListView(
+                          users: requestsList,
+                          emptyMessage: 'No pending friend requests.',
+                          controller: _controller,
+                        ),
+                        _UserListView(
+                          users: friendsList,
+                          emptyMessage:
+                              'No friends added yet. Discover people to connect!',
+                          controller: _controller,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -226,8 +316,11 @@ class _UserCard extends StatelessWidget {
     return Card(
       elevation: 0.5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showUserProfileModal(context, user, isOnline, controller),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
             Stack(
@@ -313,8 +406,9 @@ class _UserCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildActionButtons(BuildContext context) {
     // 1. Discover Tab (Not Connected)
@@ -421,5 +515,345 @@ class _UserCard extends StatelessWidget {
     }
 
     return const SizedBox.shrink();
+  }
+}
+
+class _SocialSkeletonList extends StatelessWidget {
+  const _SocialSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonLoader(
+      child: ListView.separated(
+        padding: const EdgeInsets.all(12.0),
+        itemCount: 6,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          return Card(
+            elevation: 0.5,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  SkeletonBox(width: 56, height: 56, borderRadius: 28),
+                  SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonBox(width: 120, height: 16),
+                        SizedBox(height: 6),
+                        SkeletonBox(width: 80, height: 12),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  SkeletonBox(width: 70, height: 36, borderRadius: 10),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+void _showUserProfileModal(
+  BuildContext context,
+  UserDiscovery user,
+  bool isOnline,
+  SocialController controller,
+) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => _UserProfileDetailSheet(
+      user: user,
+      isOnline: isOnline,
+      controller: controller,
+    ),
+  );
+}
+
+class _UserProfileDetailSheet extends StatelessWidget {
+  final UserDiscovery user;
+  final bool isOnline;
+  final SocialController controller;
+
+  const _UserProfileDetailSheet({
+    required this.user,
+    required this.isOnline,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fullName = '${user.firstName} ${user.lastName}'.trim();
+    final nameDisplay = fullName.isNotEmpty ? fullName : user.username;
+    final initials =
+        nameDisplay.isNotEmpty ? nameDisplay[0].toUpperCase() : 'U';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag Handle
+          Container(
+            width: 38,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // User Avatar Hero
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 3,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 46,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  backgroundImage: user.profileImageLink.isNotEmpty
+                      ? NetworkImage(user.profileImageLink)
+                      : null,
+                  child: user.profileImageLink.isEmpty
+                      ? Text(
+                          initials,
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+              if (isOnline)
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.surface,
+                      width: 3,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Full Name & Username
+          Text(
+            nameDisplay,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '@${user.username}',
+            style: TextStyle(
+              fontSize: 15,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Bio Section Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .outlineVariant
+                    .withValues(alpha: 0.4),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'About',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  user.bio.isNotEmpty ? user.bio : 'No bio added yet.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // E2EE Member Chip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .primary
+                  .withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.shield_outlined,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'End-to-End Encrypted Member',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Action Buttons
+          Row(
+            children: [
+              if (user.relationStatus == RelationStatus.accepted) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () {
+                      controller.blockUser(user.userId);
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.block_rounded, color: Colors.red),
+                    label: const Text(
+                      'Block',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+                ),
+              ] else if (user.relationStatus == null) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () {
+                      controller.sendFriendRequest(user.userId);
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.person_add_rounded),
+                    label: const Text(
+                      'Add Friend',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ] else if (user.relationStatus == RelationStatus.pending &&
+                  user.isRequester != true) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: user.relationId != null
+                        ? () {
+                            controller.acceptFriendRequest(user.relationId!);
+                            Navigator.pop(context);
+                          }
+                        : null,
+                    icon: const Icon(Icons.check_circle_rounded,
+                        color: Colors.white),
+                    label: const Text(
+                      'Accept Request',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
   }
 }

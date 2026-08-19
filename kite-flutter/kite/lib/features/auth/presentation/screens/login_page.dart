@@ -8,6 +8,7 @@ import 'package:kite/features/auth/presentation/widgets/logo_header.dart';
 import 'package:kite/features/main/presentation/screens/main_navigation_page.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
+import 'package:kite/shared/widgets/kite_loader.dart';
 import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
@@ -89,12 +90,34 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // image overlay
+          // image overlay & Soft Ambient Gradient Mesh Background
           Positioned.fill(
             child: Container(
               color: Theme.of(
                 context,
               ).colorScheme.surface.withValues(alpha: 0.50),
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(-0.5, -0.6),
+                  radius: 1.3,
+                  colors: [
+                    Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.22),
+                    Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.15),
+                    Theme.of(
+                      context,
+                    ).colorScheme.surface.withValues(alpha: 0.85),
+                  ],
+                  stops: const [0.0, 0.55, 1.0],
+                ),
+              ),
             ),
           ),
 
@@ -239,6 +262,17 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
+          ValueListenableBuilder<LoginState>(
+            valueListenable: _loginController,
+            builder: (context, state, child) {
+              if (state.isLoading) {
+                return const _GlassmorphicLoadingOverlay(
+                  message: 'Hang on tight...',
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ],
       ),
     );
@@ -272,6 +306,70 @@ class _SignUpRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _GlassmorphicLoadingOverlay extends StatelessWidget {
+  final String message;
+
+  const _GlassmorphicLoadingOverlay({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.45),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 28,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surface.withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.2),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const KiteLoader(size: 42),
+                    const SizedBox(height: 20),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

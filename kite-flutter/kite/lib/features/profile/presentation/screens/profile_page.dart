@@ -37,8 +37,9 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text(
           'Profile',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -120,10 +121,14 @@ class ProfilePage extends StatelessWidget {
                   onEdit: () => _showEditProfileModal(context, profile),
                 ),
                 const SizedBox(height: 24),
-                _ProfileInfoCard(
+                _AccountInfoCard(
                   profile: profile,
                   onEdit: () => _showEditProfileModal(context, profile),
                 ),
+                const SizedBox(height: 16),
+                _AppPreferencesCard(profile: profile),
+                const SizedBox(height: 16),
+                _SecurityCard(profile: profile),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -232,11 +237,11 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-class _ProfileInfoCard extends StatelessWidget {
+class _AccountInfoCard extends StatelessWidget {
   final UserProfile profile;
   final VoidCallback onEdit;
 
-  const _ProfileInfoCard({required this.profile, required this.onEdit});
+  const _AccountInfoCard({required this.profile, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -245,13 +250,23 @@ class _ProfileInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(
           context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        ).colorScheme.surface.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Theme.of(
             context,
-          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ).colorScheme.primary.withValues(alpha: 0.25),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,15 +299,209 @@ class _ProfileInfoCard extends StatelessWidget {
                 profile.gender.name[0].toUpperCase() +
                 profile.gender.name.substring(1),
           ),
-          const Divider(height: 24),
-          _InfoTile(
-            icon: Icons.palette_outlined,
-            label: 'Preferred Theme',
-            value:
-                profile.preferredTheme.name[0].toUpperCase() +
-                profile.preferredTheme.name.substring(1),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppPreferencesCard extends StatelessWidget {
+  final UserProfile profile;
+
+  const _AppPreferencesCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surface.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'App Preferences',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.palette_outlined,
+                    size: 22,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 14),
+                  const Text(
+                    'Theme',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              _ThemeSegmentedToggle(
+                currentTheme: profile.preferredTheme,
+                profile: profile,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecurityCard extends StatelessWidget {
+  final UserProfile profile;
+
+  const _SecurityCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surface.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Security & Encryption',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(
+                Icons.security_rounded,
+                size: 22,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'End-to-End Encryption',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'X25519 & AES-256 Active',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.check_circle_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeSegmentedToggle extends StatelessWidget {
+  final PreferredTheme currentTheme;
+  final UserProfile profile;
+
+  const _ThemeSegmentedToggle({
+    required this.currentTheme,
+    required this.profile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<PreferredTheme>(
+      showSelectedIcon: false,
+      segments: const [
+        ButtonSegment<PreferredTheme>(
+          value: PreferredTheme.light,
+          label: Text('Light', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          icon: Icon(Icons.light_mode_rounded, size: 14),
+        ),
+        ButtonSegment<PreferredTheme>(
+          value: PreferredTheme.dark,
+          label: Text('Dark', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          icon: Icon(Icons.dark_mode_rounded, size: 14),
+        ),
+      ],
+      selected: {currentTheme},
+      onSelectionChanged: (Set<PreferredTheme> newSelection) {
+        if (newSelection.isNotEmpty) {
+          final selectedTheme = newSelection.first;
+          if (selectedTheme != currentTheme) {
+            context.read<UserProfileProvider>().updateUserProfile(
+                  firstName: profile.firstName,
+                  lastName: profile.lastName,
+                  username: profile.username,
+                  profileImageLink: profile.profileImageLink,
+                  bio: profile.bio,
+                  gender: profile.gender,
+                  preferredTheme: selectedTheme,
+                );
+          }
+        }
+      },
+      style: SegmentedButton.styleFrom(
+        selectedBackgroundColor: Theme.of(context).colorScheme.primary,
+        selectedForegroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+        visualDensity: VisualDensity.compact,
       ),
     );
   }

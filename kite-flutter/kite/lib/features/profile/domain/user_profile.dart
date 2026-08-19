@@ -33,12 +33,16 @@ class UserProfile {
       profileImageLink: json['profileImageLink'] ?? '',
       bio: json['bio'] ?? '',
       gender: Gender.values.firstWhere(
-        (g) => g.name.toUpperCase() == (json['gender'] as String?).toString().toUpperCase(),
+        (g) =>
+            g.name.toUpperCase() ==
+            (json['gender'] as String?).toString().toUpperCase(),
         orElse: () => Gender.other,
       ),
       preferredTheme: PreferredTheme.values.firstWhere(
-        (t) => t.name.toUpperCase() == (json['preferredTheme'] as String?).toString().toUpperCase(),
-        orElse: () => PreferredTheme.system,
+        (t) =>
+            t.name.toUpperCase() ==
+            (json['preferredTheme'] as String?).toString().toUpperCase(),
+        orElse: () => PreferredTheme.dark,
       ),
       publicKey: json['publicKey'] as String?,
     );

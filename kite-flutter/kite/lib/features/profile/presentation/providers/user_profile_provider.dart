@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:kite/features/profile/domain/user_profile.dart';
 import 'package:kite/shared/enums/gender.dart';
 import 'package:kite/shared/enums/preferred_theme.dart';
@@ -16,6 +16,17 @@ class UserProfileProvider extends ChangeNotifier {
   UserProfile? get userProfile => _userProfile;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  ThemeMode get themeMode {
+    final theme = _userProfile?.preferredTheme;
+    switch (theme) {
+      case PreferredTheme.light:
+        return ThemeMode.light;
+      case PreferredTheme.dark:
+      case null:
+        return ThemeMode.dark;
+    }
+  }
 
   Future<void> fetchUserProfile() async {
     _isLoading = true;
