@@ -5,6 +5,7 @@ import 'package:kite/features/conversation/presentation/controllers/conversation
 import 'package:kite/features/conversation/presentation/screens/conversation_room_page.dart';
 import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
+import 'package:kite/features/social/presentation/screens/social_page.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,9 @@ class _ConversationPageState extends State<ConversationPage> {
   late final ConversationController _controller;
   String? _lastSubscribedUserId;
 
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +32,7 @@ class _ConversationPageState extends State<ConversationPage> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -59,14 +64,48 @@ class _ConversationPageState extends State<ConversationPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Chats',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-        ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 18,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search chats...',
+                  hintStyle: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.7),
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (_) => setState(() {}),
+              )
+            : const Text(
+                'Chats',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+              ),
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.search_rounded), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.edit_square), onPressed: () {}),
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _isSearching = false;
+                  _searchController.clear();
+                } else {
+                  _isSearching = true;
+                }
+              });
+            },
+          ),
         ],
       ),
       body: ValueListenableBuilder<ConversationState>(
@@ -93,17 +132,51 @@ class _ConversationPageState extends State<ConversationPage> {
             );
           }
 
+          final query = _searchController.text.trim().toLowerCase();
+          final filteredConversations = query.isEmpty
+              ? state.conversations
+              : state.conversations.where((c) {
+                  final name = (c.name ?? '').toLowerCase();
+                  return name.contains(query);
+                }).toList();
+
+          if (filteredConversations.isEmpty && query.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 48,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No chats matching "$query"',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return RefreshIndicator(
             onRefresh: () =>
                 _controller.fetchConversations(currentUserId: userId),
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              itemCount: state.conversations.length,
+              itemCount: filteredConversations.length,
               separatorBuilder: (_, _) =>
                   const Divider(height: 1, indent: 76),
               itemBuilder: (context, index) {
                 return _ConversationTile(
-                  conversation: state.conversations[index],
+                  conversation: filteredConversations[index],
                   currentUserId: userId,
                 );
               },
@@ -160,6 +233,10 @@ class _ConversationTile extends StatelessWidget {
           conversation.memberIds,
           currentUserId,
         );
+
+    final isSentByMe = conversation.lastMessage != null &&
+        currentUserId != null &&
+        conversation.lastMessage!.senderId == currentUserId;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -236,14 +313,29 @@ class _ConversationTile extends StatelessWidget {
                       (snapshot.connectionState == ConnectionState.waiting
                           ? 'Loading message...'
                           : 'Encrypted Message');
-                  return Text(
-                    text,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 14,
-                    ),
+                  return Row(
+                    children: [
+                      if (isSentByMe) ...[
+                        Icon(
+                          Icons.done_all_rounded,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      Expanded(
+                        child: Text(
+                          text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 },
               )
@@ -308,6 +400,33 @@ class _EmptyConversationsView extends StatelessWidget {
                         .colorScheme
                         .onSurfaceVariant
                         .withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SocialPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.people_outline_rounded, size: 18),
+                  label: const Text(
+                    'Discover People',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
