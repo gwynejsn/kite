@@ -692,6 +692,16 @@ class _ConversationInfoSheet extends StatelessWidget {
                               fontSize: 14,
                             ),
                           ),
+                          if (usernameStr.isNotEmpty)
+                            Text(
+                              '@$usernameStr',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -892,16 +902,29 @@ class _MessageBubble extends StatelessWidget {
               },
             ),
             const SizedBox(height: 4),
-            Text(
-              _formatTime(message.createdAt),
-              style: TextStyle(
-                color: isMe
-                    ? Colors.white.withValues(alpha: 0.7)
-                    : Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                fontSize: 10,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatTime(message.createdAt),
+                  style: TextStyle(
+                    color: isMe
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    fontSize: 10,
+                  ),
+                ),
+                if (isMe) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.done_all_rounded,
+                    size: 13,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

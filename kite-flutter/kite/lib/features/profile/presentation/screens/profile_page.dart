@@ -285,14 +285,85 @@ class _ProfileInfoCard extends StatelessWidget {
                 profile.gender.name.substring(1),
           ),
           const Divider(height: 24),
-          _InfoTile(
-            icon: Icons.palette_outlined,
-            label: 'Preferred Theme',
-            value:
-                profile.preferredTheme.name[0].toUpperCase() +
-                profile.preferredTheme.name.substring(1),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.palette_outlined,
+                    size: 22,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 14),
+                  const Text(
+                    'Theme',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              _ThemeSegmentedToggle(
+                currentTheme: profile.preferredTheme,
+                profile: profile,
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ThemeSegmentedToggle extends StatelessWidget {
+  final PreferredTheme currentTheme;
+  final UserProfile profile;
+
+  const _ThemeSegmentedToggle({
+    required this.currentTheme,
+    required this.profile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<PreferredTheme>(
+      showSelectedIcon: false,
+      segments: const [
+        ButtonSegment<PreferredTheme>(
+          value: PreferredTheme.light,
+          label: Text('Light', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          icon: Icon(Icons.light_mode_rounded, size: 14),
+        ),
+        ButtonSegment<PreferredTheme>(
+          value: PreferredTheme.dark,
+          label: Text('Dark', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          icon: Icon(Icons.dark_mode_rounded, size: 14),
+        ),
+      ],
+      selected: {currentTheme},
+      onSelectionChanged: (Set<PreferredTheme> newSelection) {
+        if (newSelection.isNotEmpty) {
+          final selectedTheme = newSelection.first;
+          if (selectedTheme != currentTheme) {
+            context.read<UserProfileProvider>().updateUserProfile(
+                  firstName: profile.firstName,
+                  lastName: profile.lastName,
+                  username: profile.username,
+                  profileImageLink: profile.profileImageLink,
+                  bio: profile.bio,
+                  gender: profile.gender,
+                  preferredTheme: selectedTheme,
+                );
+          }
+        }
+      },
+      style: SegmentedButton.styleFrom(
+        selectedBackgroundColor: Theme.of(context).colorScheme.primary,
+        selectedForegroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+        visualDensity: VisualDensity.compact,
       ),
     );
   }

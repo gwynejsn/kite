@@ -48,95 +48,110 @@ class _SocialPageState extends State<SocialPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'People',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          tabs: const [
-            Tab(text: 'Discover'),
-            Tab(text: 'Requests'),
-            Tab(text: 'Friends'),
-          ],
-        ),
-      ),
-      body: ValueListenableBuilder<SocialState>(
-        valueListenable: _controller,
-        builder: (context, state, child) {
-          _syncPresences(state);
+    return ValueListenableBuilder<SocialState>(
+      valueListenable: _controller,
+      builder: (context, state, child) {
+        _syncPresences(state);
 
-          if (state.isLoading && state.people.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        final pendingCount = state.people
+            .where(
+              (p) =>
+                  p.relationStatus == RelationStatus.pending &&
+                  p.isRequester != true,
+            )
+            .length;
 
-          if (state.errorMessage != null && state.people.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.error,
+        final requestsTabTitle =
+            pendingCount > 0 ? 'Requests ($pendingCount)' : 'Requests';
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'People',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+            ),
+            bottom: TabBar(
+              controller: _tabController,
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+              tabs: [
+                const Tab(text: 'Discover'),
+                Tab(text: requestsTabTitle),
+                const Tab(text: 'Friends'),
+              ],
+            ),
+          ),
+          body: Builder(
+            builder: (context) {
+              if (state.isLoading && state.people.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (state.errorMessage != null && state.people.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          state.errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => _controller.fetchPeople(),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      state.errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () => _controller.fetchPeople(),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+                  ),
+                );
+              }
 
-          final discoverList = state.people
-              .where((p) => p.relationStatus == null)
-              .toList();
-          final requestsList = state.people
-              .where((p) => p.relationStatus == RelationStatus.pending)
-              .toList();
-          final friendsList = state.people
-              .where((p) => p.relationStatus == RelationStatus.accepted)
-              .toList();
+              final discoverList = state.people
+                  .where((p) => p.relationStatus == null)
+                  .toList();
+              final requestsList = state.people
+                  .where((p) => p.relationStatus == RelationStatus.pending)
+                  .toList();
+              final friendsList = state.people
+                  .where((p) => p.relationStatus == RelationStatus.accepted)
+                  .toList();
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _UserListView(
-                users: discoverList,
-                emptyMessage: 'No new people to discover right now.',
-                controller: _controller,
-              ),
-              _UserListView(
-                users: requestsList,
-                emptyMessage: 'No pending friend requests.',
-                controller: _controller,
-              ),
-              _UserListView(
-                users: friendsList,
-                emptyMessage: 'You have not added any friends yet.',
-                controller: _controller,
-              ),
-            ],
-          );
-        },
-      ),
+              return TabBarView(
+                controller: _tabController,
+                children: [
+                  _UserListView(
+                    users: discoverList,
+                    emptyMessage: 'No new people to discover right now.',
+                    controller: _controller,
+                  ),
+                  _UserListView(
+                    users: requestsList,
+                    emptyMessage: 'No pending friend requests.',
+                    controller: _controller,
+                  ),
+                  _UserListView(
+                    users: friendsList,
+                    emptyMessage: 'You have not added any friends yet.',
+                    controller: _controller,
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
