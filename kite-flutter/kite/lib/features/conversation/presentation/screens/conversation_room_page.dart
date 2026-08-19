@@ -1029,7 +1029,7 @@ class _MessageBubble extends StatelessWidget {
                     text,
                     style: TextStyle(
                       color: isMe
-                          ? Colors.white
+                          ? Theme.of(context).colorScheme.onPrimary
                           : Theme.of(context).colorScheme.onSurface,
                       fontSize: 15,
                       fontWeight: isMatch ? FontWeight.bold : FontWeight.normal,
@@ -1046,7 +1046,10 @@ class _MessageBubble extends StatelessWidget {
                   _formatTime(message.createdAt),
                   style: TextStyle(
                     color: isMe
-                        ? Colors.white.withValues(alpha: 0.7)
+                        ? Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.75)
                         : Theme.of(
                             context,
                           ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
@@ -1058,7 +1061,10 @@ class _MessageBubble extends StatelessWidget {
                   Icon(
                     Icons.done_all_rounded,
                     size: 13,
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.85),
                   ),
                 ],
               ],
