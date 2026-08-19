@@ -23,19 +23,32 @@ class ConversationRoomPage extends StatefulWidget {
 class _ConversationRoomPageState extends State<ConversationRoomPage> {
   late final ConversationRoomController _controller;
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  bool _showScrollToBottom = false;
 
   @override
   void initState() {
     super.initState();
     _controller = sl<ConversationRoomController>();
     _controller.initRoom(widget.conversation.id);
+
+    _scrollController.addListener(() {
+      final show =
+          _scrollController.hasClients && _scrollController.offset > 200;
+      if (show != _showScrollToBottom) {
+        setState(() {
+          _showScrollToBottom = show;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _searchController.dispose();
     _controller.dispose();
     _textController.dispose();
@@ -87,12 +100,55 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
     );
   }
 
+  bool _isSameDay(DateTime d1, DateTime d2) {
+    return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
+  }
+
+  String _formatDateDivider(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final msgDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+    if (msgDate == today) {
+      return 'Today';
+    } else if (msgDate == yesterday) {
+      return 'Yesterday';
+    } else if (now.difference(dateTime).inDays < 7) {
+      final weekdays = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday'
+      ];
+      return weekdays[dateTime.weekday - 1];
+    }
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final title =
         widget.conversation.name != null && widget.conversation.name!.isNotEmpty
-        ? widget.conversation.name!
-        : 'Chat';
+            ? widget.conversation.name!
+            : 'Chat';
     final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
     final currentUserId = context
         .watch<UserProfileProvider>()
@@ -100,9 +156,9 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
         ?.userId;
 
     final isOnline = context.watch<PresenceProvider>().isAnyMemberOnline(
-      widget.conversation.memberIds,
-      currentUserId,
-    );
+          widget.conversation.memberIds,
+          currentUserId,
+        );
 
     final searchQuery = _searchController.text.trim().toLowerCase();
 
@@ -121,9 +177,10 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                 decoration: InputDecoration(
                   hintText: 'Search in conversation...',
                   hintStyle: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.7),
                   ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -136,16 +193,16 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primaryContainer,
                     backgroundImage:
                         widget.conversation.conversationPhoto != null &&
-                            widget.conversation.conversationPhoto!.isNotEmpty
-                        ? NetworkImage(widget.conversation.conversationPhoto!)
-                        : null,
-                    child:
-                        widget.conversation.conversationPhoto == null ||
+                                widget.conversation.conversationPhoto!.isNotEmpty
+                            ? NetworkImage(
+                                widget.conversation.conversationPhoto!,
+                              )
+                            : null,
+                    child: widget.conversation.conversationPhoto == null ||
                             widget.conversation.conversationPhoto!.isEmpty
                         ? Text(
                             initials,
@@ -228,8 +285,7 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                 IconButton(
                   icon: const Icon(Icons.info_outline_rounded),
                   tooltip: 'Conversation Details',
-                  onPressed: () =>
-                      _showConversationInfoModal(context, isOnline),
+                  onPressed: () => _showConversationInfoModal(context, isOnline),
                 ),
               ],
       ),
@@ -237,99 +293,148 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
         children: [
           // Messages Display List
           Expanded(
-            child: ValueListenableBuilder<ConversationRoomState>(
-              valueListenable: _controller,
-              builder: (context, state, child) {
-                if (state.isLoading && state.messages.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            child: Stack(
+              children: [
+                ValueListenableBuilder<ConversationRoomState>(
+                  valueListenable: _controller,
+                  builder: (context, state, child) {
+                    if (state.isLoading && state.messages.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                if (state.errorMessage != null && state.messages.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline_rounded,
-                            size: 48,
-                            color: Theme.of(context).colorScheme.error,
+                    if (state.errorMessage != null && state.messages.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline_rounded,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                state.errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: () => _controller.initRoom(
+                                  widget.conversation.id,
+                                ),
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('Retry'),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            state.errorMessage!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
+                        ),
+                      );
+                    }
+
+                    if (state.messages.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.mark_chat_read_outlined,
+                              size: 56,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withValues(alpha: 0.4),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () =>
-                                _controller.initRoom(widget.conversation.id),
-                            icon: const Icon(Icons.refresh_rounded),
-                            label: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
+                            const SizedBox(height: 12),
+                            Text(
+                              'No messages here yet.',
+                              style: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Say hello to start the conversation!',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withValues(alpha: 0.7),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
 
-                if (state.messages.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.mark_chat_read_outlined,
-                          size: 56,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No messages here yet.',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Say hello to start the conversation!',
-                          style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                    return ListView.builder(
+                      controller: _scrollController,
+                      reverse: true,
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: state.messages.length,
+                      itemBuilder: (context, index) {
+                        final message = state.messages[index];
+                        final isMe = message.senderId == currentUserId;
 
-                return ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: state.messages.length,
-                  itemBuilder: (context, index) {
-                    final message = state.messages[index];
-                    final isMe = message.senderId == currentUserId;
-                    return _MessageBubble(
-                      message: message,
-                      isMe: isMe,
-                      searchQuery: searchQuery,
+                        bool showDateDivider = false;
+                        if (index == state.messages.length - 1) {
+                          showDateDivider = true;
+                        } else {
+                          final prevMessageInTime = state.messages[index + 1];
+                          if (!_isSameDay(
+                              message.createdAt, prevMessageInTime.createdAt)) {
+                            showDateDivider = true;
+                          }
+                        }
+
+                        return Column(
+                          children: [
+                            if (showDateDivider)
+                              _DateDivider(
+                                dateText:
+                                    _formatDateDivider(message.createdAt),
+                              ),
+                            _MessageBubble(
+                              message: message,
+                              isMe: isMe,
+                              searchQuery: searchQuery,
+                            ),
+                          ],
+                        );
+                      },
                     );
                   },
-                );
-              },
+                ),
+
+                // Scroll-to-Bottom FAB
+                if (_showScrollToBottom)
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: FloatingActionButton.small(
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onPrimaryContainer,
+                      elevation: 4,
+                      onPressed: () {
+                        _scrollController.animateTo(
+                          0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      },
+                      child: const Icon(Icons.keyboard_arrow_down_rounded),
+                    ),
+                  ),
+              ],
             ),
           ),
 
@@ -412,6 +517,38 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
   }
 }
 
+class _DateDivider extends StatelessWidget {
+  final String dateText;
+
+  const _DateDivider({required this.dateText});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12.0),
+      alignment: Alignment.center,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+        decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          dateText,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ConversationInfoSheet extends StatelessWidget {
   final Conversation conversation;
   final bool isOnline;
@@ -430,7 +567,8 @@ class _ConversationInfoSheet extends StatelessWidget {
         : 'Chat';
     final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
 
-    final currentUserProfile = context.watch<UserProfileProvider>().userProfile;
+    final currentUserProfile =
+        context.watch<UserProfileProvider>().userProfile;
     final currentUserId = currentUserProfile?.userId;
 
     List<UserDiscovery> socialPeople = [];
@@ -454,9 +592,10 @@ class _ConversationInfoSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -472,16 +611,14 @@ class _ConversationInfoSheet extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 44,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.primaryContainer,
                         backgroundImage:
                             conversation.conversationPhoto != null &&
-                                conversation.conversationPhoto!.isNotEmpty
-                            ? NetworkImage(conversation.conversationPhoto!)
-                            : null,
-                        child:
-                            conversation.conversationPhoto == null ||
+                                    conversation.conversationPhoto!.isNotEmpty
+                                ? NetworkImage(conversation.conversationPhoto!)
+                                : null,
+                        child: conversation.conversationPhoto == null ||
                                 conversation.conversationPhoto!.isEmpty
                             ? Text(
                                 initials,
@@ -513,9 +650,10 @@ class _ConversationInfoSheet extends StatelessWidget {
                   const SizedBox(height: 14),
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -535,14 +673,16 @@ class _ConversationInfoSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -569,9 +709,8 @@ class _ConversationInfoSheet extends StatelessWidget {
                           'Messages and calls stay secured with X25519 & AES-256 encryption.',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -619,8 +758,8 @@ class _ConversationInfoSheet extends StatelessWidget {
                 usernameStr = socialMatch.username;
                 photoUrl = socialMatch.profileImageLink;
               } else {
-                memberName =
-                    conversation.name != null && conversation.name!.isNotEmpty
+                memberName = conversation.name != null &&
+                        conversation.name!.isNotEmpty
                     ? conversation.name!
                     : 'Member';
                 usernameStr = mId.length > 8 ? mId.substring(0, 8) : mId;
@@ -851,9 +990,8 @@ class _MessageBubble extends StatelessWidget {
           ),
         ),
         child: Column(
-          crossAxisAlignment: isMe
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             FutureBuilder<String>(
               future: message.getDecryptedContent(
@@ -874,8 +1012,7 @@ class _MessageBubble extends StatelessWidget {
 
                 final text = snapshot.data ?? 'Encrypted Message';
 
-                final isMatch =
-                    searchQuery.isNotEmpty &&
+                final isMatch = searchQuery.isNotEmpty &&
                     text.toLowerCase().contains(searchQuery);
 
                 return Container(
