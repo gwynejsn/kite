@@ -8,6 +8,7 @@ import 'package:kite/features/profile/presentation/providers/user_profile_provid
 import 'package:kite/features/social/presentation/screens/social_page.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
+import 'package:kite/shared/widgets/skeleton_loader.dart';
 import 'package:provider/provider.dart';
 
 class ConversationPage extends StatefulWidget {
@@ -114,7 +115,7 @@ class _ConversationPageState extends State<ConversationPage> {
           _syncPresences(state, userId);
 
           if (state.isLoading && state.conversations.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const _ConversationSkeletonList();
           }
 
           if (state.errorMessage != null && state.conversations.isEmpty) {
@@ -471,6 +472,32 @@ class _ErrorView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ConversationSkeletonList extends StatelessWidget {
+  const _ConversationSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonLoader(
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        itemCount: 8,
+        separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
+        itemBuilder: (context, index) {
+          return const ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: SkeletonBox(width: 52, height: 52, borderRadius: 26),
+            title: Padding(
+              padding: EdgeInsets.only(bottom: 6.0),
+              child: SkeletonBox(width: 140, height: 16),
+            ),
+            subtitle: SkeletonBox(width: 220, height: 14),
+          );
+        },
       ),
     );
   }

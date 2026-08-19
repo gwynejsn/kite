@@ -5,6 +5,7 @@ import 'package:kite/features/social/domain/user_discovery.dart';
 import 'package:kite/features/social/presentation/controllers/social_controller.dart';
 import 'package:kite/features/social/presentation/controllers/social_state.dart';
 import 'package:kite/shared/di/injection_container.dart';
+import 'package:kite/shared/widgets/skeleton_loader.dart';
 import 'package:provider/provider.dart';
 
 class SocialPage extends StatefulWidget {
@@ -83,7 +84,7 @@ class _SocialPageState extends State<SocialPage>
           body: Builder(
             builder: (context) {
               if (state.isLoading && state.people.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
+                return const _SocialSkeletonList();
               }
 
               if (state.errorMessage != null && state.people.isEmpty) {
@@ -436,5 +437,49 @@ class _UserCard extends StatelessWidget {
     }
 
     return const SizedBox.shrink();
+  }
+}
+
+class _SocialSkeletonList extends StatelessWidget {
+  const _SocialSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonLoader(
+      child: ListView.separated(
+        padding: const EdgeInsets.all(12.0),
+        itemCount: 6,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          return Card(
+            elevation: 0.5,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  SkeletonBox(width: 56, height: 56, borderRadius: 28),
+                  SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonBox(width: 120, height: 16),
+                        SizedBox(height: 6),
+                        SkeletonBox(width: 80, height: 12),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  SkeletonBox(width: 70, height: 36, borderRadius: 10),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
