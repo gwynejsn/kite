@@ -165,6 +165,8 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         titleSpacing: 0,
         title: _isSearching
             ? TextField(
@@ -289,8 +291,32 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                 ),
               ],
       ),
-      body: Column(
+      body: Stack(
         children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0.4, -0.5),
+                  radius: 1.3,
+                  colors: [
+                    Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.18),
+                    Theme.of(context)
+                        .colorScheme
+                        .secondary
+                        .withValues(alpha: 0.12),
+                    Theme.of(context).colorScheme.surface,
+                  ],
+                  stops: const [0.0, 0.55, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Column(
+            children: [
           // Messages Display List
           Expanded(
             child: Stack(
@@ -447,14 +473,17 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
               bottom: MediaQuery.of(context).padding.bottom + 10,
             ),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  offset: const Offset(0, -2),
-                  blurRadius: 10,
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.75),
+              border: Border(
+                top: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.15),
+                  width: 1.0,
                 ),
-              ],
+              ),
             ),
             child: Row(
               children: [
@@ -517,6 +546,8 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                 ),
               ],
             ),
+          ),
+            ],
           ),
         ],
       ),

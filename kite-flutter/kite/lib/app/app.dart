@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kite/app/app_theme.dart';
-import 'package:kite/features/auth/presentation/screens/login_page.dart';
+import 'package:kite/features/auth/presentation/screens/onboarding_page.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -16,7 +16,9 @@ class App extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: const LoginPage(),
+      themeAnimationDuration: const Duration(milliseconds: 400),
+      themeAnimationCurve: Curves.easeInOut,
+      home: const OnboardingPage(),
     );
   }
 }

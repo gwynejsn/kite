@@ -62,11 +62,11 @@ class _SocialPageState extends State<SocialPage>
             )
             .length;
 
-        final requestsTabTitle =
-            pendingCount > 0 ? 'Requests ($pendingCount)' : 'Requests';
-
         return Scaffold(
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
             title: const Text(
               'People',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
@@ -85,6 +85,8 @@ class _SocialPageState extends State<SocialPage>
                 ),
                 child: TabBar(
                   controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.center,
                   indicatorSize: TabBarIndicatorSize.tab,
                   indicator: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
@@ -97,7 +99,11 @@ class _SocialPageState extends State<SocialPage>
                   dividerColor: Colors.transparent,
                   tabs: [
                     const Tab(text: 'Discover'),
-                    Tab(text: requestsTabTitle),
+                    Tab(
+                      text: pendingCount > 0
+                          ? 'Requests ($pendingCount)'
+                          : 'Requests',
+                    ),
                     const Tab(text: 'Friends'),
                   ],
                 ),

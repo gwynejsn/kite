@@ -66,7 +66,10 @@ class _ConversationPageState extends State<ConversationPage> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: _isSearching
             ? TextField(
                 controller: _searchController,
@@ -94,7 +97,6 @@ class _ConversationPageState extends State<ConversationPage> {
                 'Chats',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
               ),
-        elevation: 0,
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
@@ -193,16 +195,6 @@ class _ConversationPageState extends State<ConversationPage> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'New Conversation',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SocialPage()),
-          );
-        },
-        child: const Icon(Icons.chat_rounded),
       ),
     );
   }
@@ -370,13 +362,38 @@ class _ConversationTile extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => ConversationRoomPage(conversation: conversation),
+          _createSmoothSlideRoute(
+            ConversationRoomPage(conversation: conversation),
           ),
         );
       },
     );
   }
+}
+
+Route _createSmoothSlideRoute(Widget page) {
+  return PageRouteBuilder(
+    transitionDuration: const Duration(milliseconds: 300),
+    reverseTransitionDuration: const Duration(milliseconds: 250),
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final slideAnimation = Tween<Offset>(
+        begin: const Offset(1.0, 0.0),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.fastOutSlowIn,
+          reverseCurve: Curves.fastOutSlowIn,
+        ),
+      );
+
+      return SlideTransition(
+        position: slideAnimation,
+        child: child,
+      );
+    },
+  );
 }
 
 class _EmptyConversationsView extends StatelessWidget {
@@ -438,9 +455,7 @@ class _EmptyConversationsView extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const SocialPage(),
-                      ),
+                      _createSmoothSlideRoute(const SocialPage()),
                     );
                   },
                   icon: const Icon(Icons.people_outline_rounded, size: 18),
