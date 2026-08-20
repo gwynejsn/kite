@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.kite"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
     buildToolsVersion = "36.0.0"
 
