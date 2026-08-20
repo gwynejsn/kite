@@ -8,6 +8,7 @@ import 'package:kite/features/profile/presentation/providers/user_profile_provid
 import 'package:kite/features/social/domain/user_discovery.dart';
 import 'package:kite/features/social/presentation/controllers/social_controller.dart';
 import 'package:kite/features/social/presentation/screens/social_page.dart';
+import 'package:kite/features/wingman/presentation/widgets/wingman_bottom_sheet.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
 import 'package:kite/shared/widgets/skeleton_loader.dart';
@@ -81,10 +82,9 @@ class _ConversationPageState extends State<ConversationPage> {
                 decoration: InputDecoration(
                   hintText: 'Search chats...',
                   hintStyle: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -99,7 +99,9 @@ class _ConversationPageState extends State<ConversationPage> {
               ),
         actions: [
           IconButton(
-            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
+            icon: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+            ),
             onPressed: () {
               setState(() {
                 if (_isSearching) {
@@ -153,10 +155,9 @@ class _ConversationPageState extends State<ConversationPage> {
                   Icon(
                     Icons.search_off_rounded,
                     size: 48,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.5),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -196,6 +197,17 @@ class _ConversationPageState extends State<ConversationPage> {
           );
         },
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        tooltip: 'Kite Wingman AI',
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        icon: const Icon(Icons.auto_awesome_rounded),
+        label: const Text(
+          'Wingman',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        onPressed: () => showWingmanBottomSheet(context),
+      ),
     );
   }
 }
@@ -204,10 +216,7 @@ class _ConversationTile extends StatelessWidget {
   final Conversation conversation;
   final String? currentUserId;
 
-  const _ConversationTile({
-    required this.conversation,
-    this.currentUserId,
-  });
+  const _ConversationTile({required this.conversation, this.currentUserId});
 
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
@@ -242,11 +251,12 @@ class _ConversationTile extends StatelessWidget {
     final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
 
     final isOnline = context.watch<PresenceProvider>().isAnyMemberOnline(
-          conversation.memberIds,
-          currentUserId,
-        );
+      conversation.memberIds,
+      currentUserId,
+    );
 
-    final isSentByMe = conversation.lastMessage != null &&
+    final isSentByMe =
+        conversation.lastMessage != null &&
         currentUserId != null &&
         conversation.lastMessage!.senderId == currentUserId;
 
@@ -257,11 +267,13 @@ class _ConversationTile extends StatelessWidget {
           CircleAvatar(
             radius: 26,
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            backgroundImage: conversation.conversationPhoto != null &&
+            backgroundImage:
+                conversation.conversationPhoto != null &&
                     conversation.conversationPhoto!.isNotEmpty
                 ? NetworkImage(conversation.conversationPhoto!)
                 : null,
-            child: conversation.conversationPhoto == null ||
+            child:
+                conversation.conversationPhoto == null ||
                     conversation.conversationPhoto!.isEmpty
                 ? Text(
                     initials,
@@ -321,7 +333,8 @@ class _ConversationTile extends StatelessWidget {
                   currentUserId: currentUserId,
                 ),
                 builder: (context, snapshot) {
-                  final text = snapshot.data ??
+                  final text =
+                      snapshot.data ??
                       (snapshot.connectionState == ConnectionState.waiting
                           ? 'Loading message...'
                           : 'Encrypted Message');
@@ -341,8 +354,9 @@ class _ConversationTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontSize: 14,
                           ),
                         ),
@@ -377,21 +391,19 @@ Route _createSmoothSlideRoute(Widget page) {
     reverseTransitionDuration: const Duration(milliseconds: 250),
     pageBuilder: (context, animation, secondaryAnimation) => page,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final slideAnimation = Tween<Offset>(
-        begin: const Offset(1.0, 0.0),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: animation,
-          curve: Curves.fastOutSlowIn,
-          reverseCurve: Curves.fastOutSlowIn,
-        ),
-      );
+      final slideAnimation =
+          Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: Curves.fastOutSlowIn,
+              reverseCurve: Curves.fastOutSlowIn,
+            ),
+          );
 
-      return SlideTransition(
-        position: slideAnimation,
-        child: child,
-      );
+      return SlideTransition(position: slideAnimation, child: child);
     },
   );
 }
@@ -416,27 +428,25 @@ class _EmptyConversationsView extends StatelessWidget {
                 Icon(
                   Icons.chat_bubble_outline_rounded,
                   size: 64,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'No conversations yet',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Start a chat to get connected!',
                   style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -551,7 +561,8 @@ class _ActiveFriendsHorizontalBar extends StatelessWidget {
 
     final presenceProvider = context.watch<PresenceProvider>();
     final onlinePeople = people.where((p) {
-      return p.userId != currentUserId && presenceProvider.isUserOnline(p.userId);
+      return p.userId != currentUserId &&
+          presenceProvider.isUserOnline(p.userId);
     }).toList();
 
     if (onlinePeople.isEmpty) {
@@ -583,8 +594,9 @@ class _ActiveFriendsHorizontalBar extends StatelessWidget {
               final user = onlinePeople[index];
               final name = '${user.firstName} ${user.lastName}'.trim();
               final displayName = name.isNotEmpty ? name : user.username;
-              final initials =
-                  displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+              final initials = displayName.isNotEmpty
+                  ? displayName[0].toUpperCase()
+                  : 'U';
 
               return Container(
                 width: 68,
@@ -596,8 +608,9 @@ class _ActiveFriendsHorizontalBar extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 26,
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primaryContainer,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
                           backgroundImage: user.profileImageLink.isNotEmpty
                               ? NetworkImage(user.profileImageLink)
                               : null,
@@ -606,9 +619,9 @@ class _ActiveFriendsHorizontalBar extends StatelessWidget {
                                   initials,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
                                   ),
                                 )
                               : null,

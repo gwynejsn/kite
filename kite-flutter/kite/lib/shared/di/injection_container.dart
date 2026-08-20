@@ -17,6 +17,7 @@ import 'package:kite/features/social/data/datasources/social_datasource.dart';
 import 'package:kite/features/social/data/repositories/social_repository_impl.dart';
 import 'package:kite/features/social/domain/repositories/social_repository.dart';
 import 'package:kite/features/social/presentation/controllers/social_controller.dart';
+import 'package:kite/features/wingman/data/wingman_api_service.dart';
 import 'package:kite/shared/networks/dio_client.dart';
 import 'package:kite/shared/networks/jwt_service.dart';
 import 'package:kite/shared/networks/jwt_service_imp.dart';
@@ -32,6 +33,10 @@ void initDependencies() {
   // DioClient holds DIO, it is like the config file here
   sl.registerLazySingleton<DioClient>(() => DioClient(sl<JwtService>()));
   sl.registerLazySingleton<Dio>(() => sl<DioClient>().dio);
+
+  sl.registerLazySingleton<WingmanApiService>(
+    () => WingmanApiService(sl<DioClient>()),
+  );
 
   sl.registerLazySingleton<WebsocketService>(
     () => WebsocketService(sl<JwtService>()),
