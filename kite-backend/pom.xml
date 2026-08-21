@@ -190,7 +190,7 @@
 <!--        langchain4j-->
         <dependency>
             <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-ollama-spring-boot4-starter</artifactId>
+            <artifactId>langchain4j-google-ai-gemini-spring-boot4-starter</artifactId>
             <version>1.19.0-beta29</version>
             <scope>compile</scope>
         </dependency>
