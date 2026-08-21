@@ -63,6 +63,38 @@ class ConversationController extends ValueNotifier<ConversationState> {
     value = value.copyWith(conversations: list);
   }
 
+  Future<Conversation?> createGroupConversation({
+    required String name,
+    required List<String> memberIds,
+    String? photoUrl,
+    List<String>? adminIds,
+  }) async {
+    try {
+      final newConv = await _repository.createGroupConversation(
+        conversationName: name,
+        memberIds: memberIds,
+        conversationPhoto: photoUrl,
+        adminIds: adminIds,
+      );
+
+      final list = List<Conversation>.from(value.conversations);
+      final index = list.indexWhere((c) => c.id == newConv.id);
+      if (index != -1) {
+        list.removeAt(index);
+      }
+      list.insert(0, newConv);
+
+      value = value.copyWith(conversations: list);
+      return newConv;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
   @override
   void dispose() {
     _stompSubscription?.call();

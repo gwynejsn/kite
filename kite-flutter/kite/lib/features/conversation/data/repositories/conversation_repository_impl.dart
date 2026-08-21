@@ -82,6 +82,21 @@ class ConversationRepositoryImpl implements ConversationRepository {
   }
 
   @override
+  Future<Conversation> createGroupConversation({
+    required String conversationName,
+    required List<String> memberIds,
+    String? conversationPhoto,
+    List<String>? adminIds,
+  }) {
+    return remoteDatasource.createGroupConversation(
+      conversationName: conversationName,
+      memberIds: memberIds,
+      conversationPhoto: conversationPhoto,
+      adminIds: adminIds,
+    );
+  }
+
+  @override
   Future<void> connectWebsocket(Function()? onConnect) {
     return websocketDatasource.connect(onConnect: onConnect);
   }

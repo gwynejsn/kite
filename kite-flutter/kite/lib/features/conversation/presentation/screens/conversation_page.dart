@@ -3,6 +3,7 @@ import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_state.dart';
 import 'package:kite/features/conversation/presentation/screens/conversation_room_page.dart';
+import 'package:kite/features/conversation/presentation/screens/create_group_page.dart';
 import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/features/social/domain/user_discovery.dart';
@@ -98,6 +99,16 @@ class _ConversationPageState extends State<ConversationPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
               ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.group_add_rounded),
+            tooltip: 'New Group Chat',
+            onPressed: () {
+              Navigator.push(
+                context,
+                _createSmoothSlideRoute(const CreateGroupPage()),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(
               _isSearching ? Icons.close_rounded : Icons.search_rounded,

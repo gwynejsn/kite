@@ -97,6 +97,42 @@ class ConversationDatasource {
     }
   }
 
+  Future<Conversation> createGroupConversation({
+    required String conversationName,
+    required List<String> memberIds,
+    String? conversationPhoto,
+    List<String>? adminIds,
+  }) async {
+    try {
+      final Map<String, dynamic> body = {
+        'conversationName': conversationName,
+        'membersId': memberIds,
+      };
+      if (conversationPhoto != null && conversationPhoto.isNotEmpty) {
+        body['conversationPhoto'] = conversationPhoto;
+      }
+      if (adminIds != null) {
+        body['adminsId'] = adminIds;
+      }
+
+      final response = await dio.post('/conversation/group/create', data: body);
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to create group conversation',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to create group conversation',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
   String _extractErrorMessage(DioException e, {required String fallback}) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||
