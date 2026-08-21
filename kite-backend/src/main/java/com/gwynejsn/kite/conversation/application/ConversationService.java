@@ -2,19 +2,24 @@ package com.gwynejsn.kite.conversation.application;
 
 import com.gwynejsn.kite.conversation.api.ConversationServiceApi;
 import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
+import com.gwynejsn.kite.conversation.application.dto.CreateGroupConversationRequest;
+import com.gwynejsn.kite.conversation.application.exceptions.ConversationAlreadyExistsException;
 import com.gwynejsn.kite.conversation.domain.Conversation;
 import com.gwynejsn.kite.conversation.domain.ConversationId;
 import com.gwynejsn.kite.conversation.domain.enums.ConversationType;
 import com.gwynejsn.kite.conversation.infrastructure.ConversationRepo;
-import com.gwynejsn.kite.conversation.infrastructure.exceptions.ConversationNotFoundException;
-import com.gwynejsn.kite.conversation.infrastructure.exceptions.UserIsNotAMemberException;
+import com.gwynejsn.kite.conversation.application.exceptions.ConversationNotFoundException;
+import com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAMemberException;
 import com.gwynejsn.kite.profile.api.UserProfileResponse;
 import com.gwynejsn.kite.profile.api.UserProfileServiceApi;
 import com.gwynejsn.kite.security.api.UserKeyServiceApi;
+import com.gwynejsn.kite.security.api.UserServiceApi;
 import com.gwynejsn.kite.shared.domain.UserId;
+import com.gwynejsn.kite.shared.infrastructure.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -32,6 +37,7 @@ public class ConversationService implements ConversationServiceApi {
     private final ConversationRepo conversationRepo;
     private final UserProfileServiceApi userProfileService;
     private final UserKeyServiceApi userKeyService;
+    private final UserServiceApi userService;
 
     public List<ConversationResponse> getAllConversations(UserId currentId) {
         log.info("Get all conversations for user {}", currentId);
@@ -55,6 +61,12 @@ public class ConversationService implements ConversationServiceApi {
         conversationRepo.save(conversation);
     }
 
+    /**
+     * Checks if the user is a member of a conversation
+     * @param conversationId
+     * @param currentUserId
+     * @return Conversation
+     */
     public Conversation validateMember(ConversationId conversationId, UserId currentUserId) {
         Conversation conversation = conversationRepo
                 .findConversationById(conversationId)
@@ -66,6 +78,12 @@ public class ConversationService implements ConversationServiceApi {
         return conversation;
     }
 
+    /**
+     * this is for 1-1 chat to be initialized whenever a user accepts a friend request
+     * @param currentUserId
+     * @param targetUserId
+     */
+    @Transactional
     @Override
     public void initializeConversation(UserId currentUserId, UserId targetUserId) {
         log.info("Initializing conversation between {} and {}", currentUserId, targetUserId);
@@ -131,5 +149,51 @@ public class ConversationService implements ConversationServiceApi {
                 baseResponse.createdAt(),
                 baseResponse.updatedAt()
         );
+    }
+
+    /**
+     * Creates a group conversation
+     * @param createGroupConversationRequest
+     * @param creatorId
+     * @return ConversationResponse
+     */
+    @Transactional
+    public ConversationResponse createGroupConversation(CreateGroupConversationRequest createGroupConversationRequest, UserId creatorId) {
+        if (conversationRepo.existsByName(createGroupConversationRequest.conversationName())) {
+            throw new ConversationAlreadyExistsException(createGroupConversationRequest.conversationName());
+        }
+
+        Set<UserId> members = UserMapper.INSTANCE.stringUserToUserIdSet(
+                createGroupConversationRequest.membersId()
+        );
+        members = (members == null) ? new java.util.HashSet<>() : new java.util.HashSet<>(members);
+        members.add(creatorId);
+
+        Set<UserId> admins = UserMapper.INSTANCE.stringUserToUserIdSet(
+                createGroupConversationRequest.adminsId()
+        );
+        admins = (admins == null || admins.isEmpty()) ? new java.util.HashSet<>() : new java.util.HashSet<>(admins);
+        admins.add(creatorId);
+
+        // ensure all admins are also members
+        members.addAll(admins);
+
+        // check if each member exists (throws an error if at least 1 is not found)
+        userService.usersExist(members);
+
+        Instant now = Instant.now();
+        Conversation groupConversation = Conversation
+                .builder()
+                .id(new ConversationId())
+                .type(ConversationType.GROUP)
+                .name(createGroupConversationRequest.conversationName())
+                .conversationPhoto(createGroupConversationRequest.conversationPhoto())
+                .memberIds(members)
+                .adminIds(admins)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        conversationRepo.save(groupConversation);
+        return mapToResponse(groupConversation, creatorId);
     }
 }

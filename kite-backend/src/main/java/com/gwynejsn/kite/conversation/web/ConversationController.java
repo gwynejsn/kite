@@ -3,12 +3,14 @@ package com.gwynejsn.kite.conversation.web;
 import com.gwynejsn.kite.conversation.application.ConversationService;
 import com.gwynejsn.kite.conversation.application.MessageService;
 import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
+import com.gwynejsn.kite.conversation.application.dto.CreateGroupConversationRequest;
 import com.gwynejsn.kite.conversation.application.dto.MessageRequest;
 import com.gwynejsn.kite.conversation.application.dto.MessageResponse;
 import com.gwynejsn.kite.conversation.domain.Conversation;
 import com.gwynejsn.kite.conversation.domain.ConversationId;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.security.AuthenticatedUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +55,7 @@ public class ConversationController {
         // broadcast message to active room subscribers
         messagingTemplate.convertAndSend("/topic/conversation." + messageRequest.conversationId(), response);
 
-        // broadcast updated conversation card to member personal channels
+        // broadcast updated conversation list
         broadcastConversationUpdate(new ConversationId(messageRequest.conversationId()), authenticatedUser.getUserId());
 
         return ResponseEntity.ok(response);
@@ -69,5 +71,25 @@ public class ConversationController {
         } catch (Exception e) {
             log.error("Failed to broadcast conversation update for {}", conversationId, e);
         }
+    }
+
+    private void broadcastGroupConversationUpdate(ConversationResponse response) {
+        try {
+            for (UserId memberId : response.memberIds()) {
+                messagingTemplate.convertAndSend("/topic/user." + memberId.id().toString() + ".conversations", response);
+            }
+        } catch (Exception e) {
+            log.error("Failed to broadcast group conversation update for {}", response.id(), e);
+        }
+    }
+
+    @PostMapping("/group/create")
+    public ResponseEntity<ConversationResponse> createGroupConversation(
+            @Valid @RequestBody CreateGroupConversationRequest createGroupConversationRequest,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        ConversationResponse response = conversationService.createGroupConversation(createGroupConversationRequest, authenticatedUser.getUserId());
+        broadcastGroupConversationUpdate(response);
+        return ResponseEntity.ok(response);
     }
 }

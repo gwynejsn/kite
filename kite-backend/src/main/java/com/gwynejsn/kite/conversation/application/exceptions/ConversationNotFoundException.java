@@ -1,4 +1,4 @@
-package com.gwynejsn.kite.conversation.infrastructure.exceptions;
+package com.gwynejsn.kite.conversation.application.exceptions;
 
 public class ConversationNotFoundException extends RuntimeException {
     public ConversationNotFoundException(String message) {

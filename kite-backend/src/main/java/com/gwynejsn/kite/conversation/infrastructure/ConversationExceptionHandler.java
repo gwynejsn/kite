@@ -1,7 +1,8 @@
 package com.gwynejsn.kite.conversation.infrastructure;
 
-import com.gwynejsn.kite.conversation.infrastructure.exceptions.ConversationNotFoundException;
-import com.gwynejsn.kite.conversation.infrastructure.exceptions.UserIsNotAMemberException;
+import com.gwynejsn.kite.conversation.application.exceptions.ConversationAlreadyExistsException;
+import com.gwynejsn.kite.conversation.application.exceptions.ConversationNotFoundException;
+import com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAMemberException;
 import com.gwynejsn.kite.security.api.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,21 @@ public class ConversationExceptionHandler {
                                 .builder()
                                 .message(ex.getMessage())
                                 .httpStatusCode(HttpStatus.UNAUTHORIZED)
+                                .path(request.getRequestURI())
+                                .timestamp(Instant.now())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler(ConversationAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleConversationAlreadyExistsException(ConversationAlreadyExistsException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(
+                        ErrorResponse
+                                .builder()
+                                .message(ex.getMessage())
+                                .httpStatusCode(HttpStatus.CONFLICT)
                                 .path(request.getRequestURI())
                                 .timestamp(Instant.now())
                                 .build()
