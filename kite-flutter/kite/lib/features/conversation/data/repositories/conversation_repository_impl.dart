@@ -97,6 +97,37 @@ class ConversationRepositoryImpl implements ConversationRepository {
   }
 
   @override
+  Future<Conversation> addMembers({
+    required String conversationId,
+    required List<String> memberIds,
+  }) {
+    return remoteDatasource.addMembers(
+      conversationId: conversationId,
+      memberIds: memberIds,
+    );
+  }
+
+  @override
+  Future<Conversation> kickMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) {
+    return remoteDatasource.kickMember(
+      conversationId: conversationId,
+      targetMemberId: targetMemberId,
+    );
+  }
+
+  @override
+  Future<void> leaveGroup({
+    required String conversationId,
+  }) {
+    return remoteDatasource.leaveGroup(
+      conversationId: conversationId,
+    );
+  }
+
+  @override
   Future<void> connectWebsocket(Function()? onConnect) {
     return websocketDatasource.connect(onConnect: onConnect);
   }

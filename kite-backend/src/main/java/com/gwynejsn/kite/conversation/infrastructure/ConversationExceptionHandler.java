@@ -58,4 +58,19 @@ public class ConversationExceptionHandler {
                                 .build()
                 );
     }
+
+    @ExceptionHandler(com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException.class)
+    public ResponseEntity<ErrorResponse> handleUserIsNotAnAdminException(com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(
+                        ErrorResponse
+                                .builder()
+                                .message(ex.getMessage())
+                                .httpStatusCode(HttpStatus.FORBIDDEN)
+                                .path(request.getRequestURI())
+                                .timestamp(Instant.now())
+                                .build()
+                );
+    }
 }

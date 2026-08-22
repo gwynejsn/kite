@@ -24,6 +24,20 @@ abstract interface class ConversationRepository {
     List<String>? adminIds,
   });
 
+  Future<Conversation> addMembers({
+    required String conversationId,
+    required List<String> memberIds,
+  });
+
+  Future<Conversation> kickMember({
+    required String conversationId,
+    required String targetMemberId,
+  });
+
+  Future<void> leaveGroup({
+    required String conversationId,
+  });
+
   Future<void> connectWebsocket(Function()? onConnect);
 
   void Function({Map<String, String>? unsubscribeHeaders})? subscribeToRoom({

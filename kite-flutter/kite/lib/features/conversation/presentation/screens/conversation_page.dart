@@ -38,7 +38,6 @@ class _ConversationPageState extends State<ConversationPage> {
   @override
   void dispose() {
     _searchController.dispose();
-    _controller.dispose();
     super.dispose();
   }
 

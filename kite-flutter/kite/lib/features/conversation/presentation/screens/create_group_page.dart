@@ -260,11 +260,13 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
             // Selected Members Chips Header
             if (_selectedMembers.isNotEmpty)
-              Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+              Material(
                 color: theme.colorScheme.surface,
-                child: ListView.builder(
+                child: SizedBox(
+                  height: 56,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: _selectedMembers.length,
@@ -308,8 +310,10 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                   },
                 ),
               ),
+            ),
+          ),
 
-            const Divider(height: 1),
+        const Divider(height: 1),
 
             // Search Bar for Members
             Padding(

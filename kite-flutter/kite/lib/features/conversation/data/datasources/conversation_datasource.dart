@@ -133,6 +133,79 @@ class ConversationDatasource {
     }
   }
 
+  Future<Conversation> addMembers({
+    required String conversationId,
+    required List<String> memberIds,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/conversation/$conversationId/members/add',
+        data: {'memberIds': memberIds},
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to add members',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to add members',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<Conversation> kickMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/conversation/$conversationId/members/kick/$targetMemberId',
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to kick member',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to kick member',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<void> leaveGroup({
+    required String conversationId,
+  }) async {
+    try {
+      final response = await dio.post('/conversation/$conversationId/leave');
+
+      if (response.statusCode == 200) {
+        return;
+      }
+      throw AuthenticationException(
+        'Failed to leave group',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to leave group',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
   String _extractErrorMessage(DioException e, {required String fallback}) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||

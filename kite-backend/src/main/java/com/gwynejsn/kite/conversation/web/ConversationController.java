@@ -92,4 +92,52 @@ public class ConversationController {
         broadcastGroupConversationUpdate(response);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{conversationId}/members/add")
+    public ResponseEntity<ConversationResponse> addMembersToGroup(
+            @PathVariable String conversationId,
+            @Valid @RequestBody com.gwynejsn.kite.conversation.application.dto.AddGroupMembersRequest request,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        ConversationResponse response = conversationService.addMembersToGroup(
+                new ConversationId(conversationId),
+                request.memberIds(),
+                authenticatedUser.getUserId()
+        );
+        broadcastGroupConversationUpdate(response);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{conversationId}/members/kick/{targetMemberId}")
+    public ResponseEntity<ConversationResponse> kickMemberFromGroup(
+            @PathVariable String conversationId,
+            @PathVariable String targetMemberId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        ConversationResponse response = conversationService.kickMemberFromGroup(
+                new ConversationId(conversationId),
+                new UserId(targetMemberId),
+                authenticatedUser.getUserId()
+        );
+        broadcastGroupConversationUpdate(response);
+        messagingTemplate.convertAndSend("/topic/user." + targetMemberId + ".conversations", response);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{conversationId}/leave")
+    public ResponseEntity<Void> leaveGroupConversation(
+            @PathVariable String conversationId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        String leavingUserId = authenticatedUser.getUserId().id().toString();
+        ConversationResponse response = conversationService.leaveGroupConversation(
+                new ConversationId(conversationId),
+                authenticatedUser.getUserId()
+        );
+        if (response != null) {
+            broadcastGroupConversationUpdate(response);
+            messagingTemplate.convertAndSend("/topic/user." + leavingUserId + ".conversations", response);
+        }
+        return ResponseEntity.ok().build();
+    }
 }

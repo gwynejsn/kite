@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/domain/conversation_type.dart';
 import 'package:kite/features/conversation/domain/message_response.dart';
+import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_state.dart';
+import 'package:kite/features/conversation/presentation/controllers/conversation_state.dart';
+import 'package:kite/features/conversation/presentation/screens/conversation_details_page.dart';
 import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
-import 'package:kite/features/social/domain/user_discovery.dart';
-import 'package:kite/features/social/presentation/controllers/social_controller.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
 import 'package:provider/provider.dart';
@@ -56,47 +57,45 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
     super.dispose();
   }
 
-  void _handleSendMessage(String? currentUserId) {
+  void _handleSendMessage(String? currentUserId, Conversation activeConv) {
     final content = _textController.text.trim();
     if (content.isNotEmpty && currentUserId != null) {
       _textController.clear();
 
       String? recipientPublicKey;
-      final otherMemberId = widget.conversation.memberIds.firstWhere(
+      final otherMemberId = activeConv.memberIds.firstWhere(
         (id) => id != currentUserId,
         orElse: () => '',
       );
       if (otherMemberId.isNotEmpty) {
         recipientPublicKey =
-            widget.conversation.memberPublicKeys[otherMemberId];
+            activeConv.memberPublicKeys[otherMemberId];
       }
 
       _controller.sendMessage(
-        conversationId: widget.conversation.id,
+        conversationId: activeConv.id,
         content: content,
         currentUserId: currentUserId,
         recipientPublicKey: recipientPublicKey,
-        memberPublicKeys: widget.conversation.memberPublicKeys,
+        memberPublicKeys: activeConv.memberPublicKeys,
       );
     }
   }
 
-  void _showConversationInfoModal(BuildContext context, bool isOnline) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => _ConversationInfoSheet(
-        conversation: widget.conversation,
-        isOnline: isOnline,
-        onSearchTap: () {
-          Navigator.pop(context);
-          setState(() {
-            _isSearching = true;
-          });
-        },
+  void _openConversationDetailsPage(
+      BuildContext context, bool isOnline, Conversation activeConv) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConversationDetailsPage(
+          conversation: activeConv,
+          isOnline: isOnline,
+          onSearchTap: () {
+            setState(() {
+              _isSearching = true;
+            });
+          },
+        ),
       ),
     );
   }
@@ -146,225 +145,226 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        widget.conversation.name != null && widget.conversation.name!.isNotEmpty
-        ? widget.conversation.name!
-        : 'Chat';
-    final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
-    final currentUserId = context
-        .watch<UserProfileProvider>()
-        .userProfile
-        ?.userId;
+    return ValueListenableBuilder<ConversationState>(
+      valueListenable: sl<ConversationController>(),
+      builder: (context, convState, child) {
+        final activeConv = convState.conversations.firstWhere(
+          (c) => c.id == widget.conversation.id,
+          orElse: () => widget.conversation,
+        );
 
-    final isOnline = context.watch<PresenceProvider>().isAnyMemberOnline(
-      widget.conversation.memberIds,
-      currentUserId,
-    );
+        final title = activeConv.name != null && activeConv.name!.isNotEmpty
+            ? activeConv.name!
+            : 'Chat';
+        final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
+        final currentUserId = context
+            .watch<UserProfileProvider>()
+            .userProfile
+            ?.userId;
 
-    final searchQuery = _searchController.text.trim().toLowerCase();
+        final isOnline = context.watch<PresenceProvider>().isAnyMemberOnline(
+          activeConv.memberIds,
+          currentUserId,
+        );
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        titleSpacing: 0,
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 17,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Search in conversation...',
-                  hintStyle: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onChanged: (_) => setState(() {}),
-              )
-            : Row(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer,
-                    backgroundImage:
-                        widget.conversation.conversationPhoto != null &&
-                            widget.conversation.conversationPhoto!.isNotEmpty
-                        ? NetworkImage(widget.conversation.conversationPhoto!)
-                        : null,
-                    child:
-                        widget.conversation.conversationPhoto == null ||
-                            widget.conversation.conversationPhoto!.isEmpty
-                        ? Text(
-                            initials,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        isOnline
-                            ? const Text(
-                                'Active now',
+        final searchQuery = _searchController.text.trim().toLowerCase();
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            titleSpacing: 0,
+            title: _isSearching
+                ? TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 17,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Search in conversation...',
+                      hintStyle: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  )
+                : Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        backgroundImage:
+                            activeConv.conversationPhoto != null &&
+                                    activeConv.conversationPhoto!.isNotEmpty
+                                ? NetworkImage(activeConv.conversationPhoto!)
+                                : null,
+                        child: activeConv.conversationPhoto == null ||
+                                activeConv.conversationPhoto!.isEmpty
+                            ? Text(
+                                initials,
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
                                 ),
                               )
-                            : const Text(
-                                'Offline',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
                               ),
+                            ),
+                            isOnline
+                                ? const Text(
+                                    'Active now',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Offline',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+            actions: _isSearching
+                ? [
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () {
+                        setState(() {
+                          _isSearching = false;
+                          _searchController.clear();
+                        });
+                      },
+                    ),
+                  ]
+                : [
+                    IconButton(
+                      icon: const Icon(Icons.search_rounded),
+                      tooltip: 'Search messages',
+                      onPressed: () {
+                        setState(() {
+                          _isSearching = true;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.call_rounded),
+                      onPressed: () {},
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.videocam_rounded),
+                      onPressed: () {},
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.info_outline_rounded),
+                      tooltip: 'Conversation Details',
+                      onPressed: () =>
+                          _openConversationDetailsPage(context, isOnline, activeConv),
+                    ),
+                  ],
+          ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(0.4, -0.5),
+                      radius: 1.3,
+                      colors: [
+                        Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.15),
+                        Theme.of(context).colorScheme.surface,
                       ],
                     ),
                   ),
-                ],
-              ),
-        actions: _isSearching
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = false;
-                      _searchController.clear();
-                    });
-                  },
-                ),
-              ]
-            : [
-                IconButton(
-                  icon: const Icon(Icons.search_rounded),
-                  tooltip: 'Search messages',
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = true;
-                    });
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.call_rounded),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: const Icon(Icons.videocam_rounded),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: const Icon(Icons.info_outline_rounded),
-                  tooltip: 'Conversation Details',
-                  onPressed: () =>
-                      _showConversationInfoModal(context, isOnline),
-                ),
-              ],
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0.4, -0.5),
-                  radius: 1.3,
-                  colors: [
-                    Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.18),
-                    Theme.of(
-                      context,
-                    ).colorScheme.secondary.withValues(alpha: 0.12),
-                    Theme.of(context).colorScheme.surface,
-                  ],
-                  stops: const [0.0, 0.55, 1.0],
                 ),
               ),
-            ),
-          ),
-          Column(
-            children: [
-              // Messages Display List
-              Expanded(
-                child: Stack(
-                  children: [
-                    ValueListenableBuilder<ConversationRoomState>(
-                      valueListenable: _controller,
-                      builder: (context, state, child) {
-                        if (state.isLoading && state.messages.isEmpty) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
+              Column(
+                children: [
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        ValueListenableBuilder<ConversationRoomState>(
+                          valueListenable: _controller,
+                          builder: (context, state, child) {
+                            if (state.isLoading && state.messages.isEmpty) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
 
-                        if (state.errorMessage != null &&
-                            state.messages.isEmpty) {
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline_rounded,
-                                    size: 48,
-                                    color: Theme.of(context).colorScheme.error,
+                            if (state.errorMessage != null &&
+                                state.messages.isEmpty) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline_rounded,
+                                        size: 48,
+                                        color: Theme.of(context).colorScheme.error,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        state.errorMessage!,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.error,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton.icon(
+                                        onPressed: () => _controller.initRoom(
+                                          widget.conversation.id,
+                                        ),
+                                        icon: const Icon(Icons.refresh_rounded),
+                                        label: const Text('Retry'),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    state.errorMessage!,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.error,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton.icon(
-                                    onPressed: () => _controller.initRoom(
-                                      widget.conversation.id,
-                                    ),
-                                    icon: const Icon(Icons.refresh_rounded),
-                                    label: const Text('Retry'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
+                                ),
+                              );
+                            }
 
                         if (state.messages.isEmpty) {
                           return Center(
@@ -440,7 +440,7 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                                   message: message,
                                   isMe: isMe,
                                   searchQuery: searchQuery,
-                                  conversation: widget.conversation,
+                                  conversation: activeConv,
                                 ),
                               ],
                             );
@@ -540,7 +540,8 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        onSubmitted: (_) => _handleSendMessage(currentUserId),
+                        onSubmitted: (_) =>
+                            _handleSendMessage(currentUserId, activeConv),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -554,7 +555,8 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                         color: Colors.white,
                         size: 20,
                       ),
-                      onPressed: () => _handleSendMessage(currentUserId),
+                      onPressed: () =>
+                          _handleSendMessage(currentUserId, activeConv),
                     ),
                   ],
                 ),
@@ -563,6 +565,8 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }
@@ -594,432 +598,6 @@ class _DateDivider extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ConversationInfoSheet extends StatelessWidget {
-  final Conversation conversation;
-  final bool isOnline;
-  final VoidCallback onSearchTap;
-
-  const _ConversationInfoSheet({
-    required this.conversation,
-    required this.isOnline,
-    required this.onSearchTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final title = conversation.name != null && conversation.name!.isNotEmpty
-        ? conversation.name!
-        : 'Chat';
-    final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
-
-    final currentUserProfile = context.watch<UserProfileProvider>().userProfile;
-    final currentUserId = currentUserProfile?.userId;
-
-    List<UserDiscovery> socialPeople = [];
-    try {
-      socialPeople = sl<SocialController>().value.people;
-    } catch (_) {}
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Large Avatar Header
-            Center(
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 44,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        backgroundImage:
-                            conversation.conversationPhoto != null &&
-                                conversation.conversationPhoto!.isNotEmpty
-                            ? NetworkImage(conversation.conversationPhoto!)
-                            : null,
-                        child:
-                            conversation.conversationPhoto == null ||
-                                conversation.conversationPhoto!.isEmpty
-                            ? Text(
-                                initials,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 32,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
-                                ),
-                              )
-                            : null,
-                      ),
-                      if (isOnline)
-                        Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.surface,
-                              width: 3,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isOnline ? 'Active now' : 'Offline',
-                    style: TextStyle(
-                      color: isOnline ? Colors.green : Colors.grey,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // E2EE Security Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.lock_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'End-to-End Encrypted',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Messages and calls stay secured with X25519 & AES-256 encryption.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Members List Section
-            Text(
-              'Members (${conversation.memberIds.length})',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            ...conversation.memberIds.map((mId) {
-              final isCurrentUser = mId == currentUserId;
-              final isAdmin = conversation.adminIds.contains(mId);
-              final memberProfile = conversation.memberProfiles[mId];
-
-              UserDiscovery? socialMatch;
-              for (final p in socialPeople) {
-                if (p.userId == mId) {
-                  socialMatch = p;
-                  break;
-                }
-              }
-
-              String memberName;
-              String usernameStr;
-              String photoUrl = '';
-
-              if (memberProfile != null) {
-                memberName = memberProfile.displayName;
-                if (isCurrentUser) memberName += ' (You)';
-                usernameStr = memberProfile.username;
-                photoUrl = memberProfile.profilePhoto ?? '';
-              } else if (isCurrentUser && currentUserProfile != null) {
-                final fn =
-                    '${currentUserProfile.firstName} ${currentUserProfile.lastName}'
-                        .trim();
-                memberName = fn.isNotEmpty
-                    ? '$fn (You)'
-                    : '@${currentUserProfile.username} (You)';
-                usernameStr = currentUserProfile.username;
-                photoUrl = currentUserProfile.profileImageLink;
-              } else if (socialMatch != null) {
-                final fn = '${socialMatch.firstName} ${socialMatch.lastName}'
-                    .trim();
-                memberName = fn.isNotEmpty ? fn : socialMatch.username;
-                usernameStr = socialMatch.username;
-                photoUrl = socialMatch.profileImageLink;
-              } else {
-                memberName = isCurrentUser ? 'You' : 'Member';
-                usernameStr = mId.length > 8 ? mId.substring(0, 8) : mId;
-              }
-
-              final memberInitials = memberName.isNotEmpty
-                  ? memberName[0].toUpperCase()
-                  : 'M';
-
-              final memberOnline = context
-                  .watch<PresenceProvider>()
-                  .isUserOnline(mId);
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
-                child: Row(
-                  children: [
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          backgroundImage: photoUrl.isNotEmpty
-                              ? NetworkImage(photoUrl)
-                              : null,
-                          child: photoUrl.isEmpty
-                              ? Text(
-                                  memberInitials,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        if (memberOnline)
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  memberName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (isAdmin) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primaryContainer,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'ADMIN',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          if (usernameStr.isNotEmpty)
-                            Text(
-                              '@$usernameStr',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.key_rounded,
-                            size: 12,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Key Active',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-            const Divider(height: 20),
-
-            // Actions List
-            _InfoSectionTile(
-              icon: Icons.search_rounded,
-              title: 'Search in Conversation',
-              subtitle: 'Find specific messages',
-              onTap: onSearchTap,
-            ),
-            const Divider(height: 20),
-            _InfoSectionTile(
-              icon: Icons.notifications_none_rounded,
-              title: 'Mute Notifications',
-              subtitle: 'Off',
-              onTap: () {},
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoSectionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
-  const _InfoSectionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontSize: 13,
-        ),
-      ),
-      trailing: onTap != null
-          ? const Icon(Icons.chevron_right_rounded, size: 20)
-          : null,
-      onTap: onTap,
     );
   }
 }

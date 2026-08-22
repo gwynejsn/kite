@@ -97,7 +97,7 @@ void initDependencies() {
     () => RegisterController(sl<AuthRepository>()),
   );
 
-  sl.registerFactory<ConversationController>(
+  sl.registerLazySingleton<ConversationController>(
     () => ConversationController(sl<ConversationRepository>()),
   );
 

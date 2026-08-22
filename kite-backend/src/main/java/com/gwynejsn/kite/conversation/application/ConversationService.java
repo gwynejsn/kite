@@ -229,4 +229,74 @@ public class ConversationService implements ConversationServiceApi {
         conversationRepo.save(groupConversation);
         return mapToResponse(groupConversation, creatorId);
     }
+
+    @Transactional
+    public ConversationResponse addMembersToGroup(ConversationId conversationId, List<String> newMemberIds, UserId currentUserId) {
+        Conversation conversation = validateMember(conversationId, currentUserId);
+        if (conversation.getType() != ConversationType.GROUP) {
+            throw new IllegalArgumentException("Cannot add members to a direct conversation");
+        }
+        if (!conversation.getAdminIds().contains(currentUserId)) {
+            throw new com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException("Only admins can add members to the group");
+        }
+
+        Set<UserId> newMembers = UserMapper.INSTANCE.stringUserToUserIdSet(newMemberIds);
+        if (newMembers != null && !newMembers.isEmpty()) {
+            userService.usersExist(newMembers);
+            conversation.getMemberIds().addAll(newMembers);
+            conversation.setUpdatedAt(Instant.now());
+            conversationRepo.save(conversation);
+        }
+        return mapToResponse(conversation, currentUserId);
+    }
+
+    @Transactional
+    public ConversationResponse kickMemberFromGroup(ConversationId conversationId, UserId targetMemberId, UserId currentUserId) {
+        Conversation conversation = validateMember(conversationId, currentUserId);
+        if (conversation.getType() != ConversationType.GROUP) {
+            throw new IllegalArgumentException("Cannot kick members from a direct conversation");
+        }
+        if (!conversation.getAdminIds().contains(currentUserId)) {
+            throw new com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException("Only admins can kick members from the group");
+        }
+        if (targetMemberId.equals(currentUserId)) {
+            throw new IllegalArgumentException("Admins cannot kick themselves. Use leave instead.");
+        }
+
+        conversation.getMemberIds().remove(targetMemberId);
+        conversation.getAdminIds().remove(targetMemberId);
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepo.save(conversation);
+
+        return mapToResponse(conversation, currentUserId);
+    }
+
+    @Transactional
+    public ConversationResponse leaveGroupConversation(ConversationId conversationId, UserId currentUserId) {
+        Conversation conversation = validateMember(conversationId, currentUserId);
+        if (conversation.getType() != ConversationType.GROUP) {
+            throw new IllegalArgumentException("Cannot leave a direct conversation");
+        }
+
+        conversation.getMemberIds().remove(currentUserId);
+        conversation.getAdminIds().remove(currentUserId);
+
+        if (conversation.getMemberIds().isEmpty()) {
+            conversationRepo.delete(conversation);
+            log.info("Group conversation {} was deleted because all members left", conversationId);
+            return mapToResponse(conversation, currentUserId);
+        }
+
+        // Auto-promote another member to Admin if no admins remain
+        if (conversation.getAdminIds().isEmpty()) {
+            UserId nextAdmin = conversation.getMemberIds().iterator().next();
+            conversation.getAdminIds().add(nextAdmin);
+            log.info("Auto-promoted user {} to admin in conversation {}", nextAdmin, conversationId);
+        }
+
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepo.save(conversation);
+
+        return mapToResponse(conversation, currentUserId);
+    }
 }
