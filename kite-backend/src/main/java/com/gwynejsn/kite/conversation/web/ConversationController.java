@@ -75,8 +75,8 @@ public class ConversationController {
 
     private void broadcastGroupConversationUpdate(ConversationResponse response) {
         try {
-            for (UserId memberId : response.memberIds()) {
-                messagingTemplate.convertAndSend("/topic/user." + memberId.id().toString() + ".conversations", response);
+            for (String memberId : response.memberIds()) {
+                messagingTemplate.convertAndSend("/topic/user." + memberId + ".conversations", response);
             }
         } catch (Exception e) {
             log.error("Failed to broadcast group conversation update for {}", response.id(), e);

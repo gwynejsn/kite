@@ -77,8 +77,8 @@ class ConversationServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.name()).isEqualTo(groupName);
         assertThat(response.type()).isEqualTo(ConversationType.GROUP);
-        assertThat(response.memberIds()).contains(creatorId, otherMemberId);
-        assertThat(response.adminIds()).contains(creatorId);
+        assertThat(response.memberIds()).contains(creatorId.id().toString(), otherMemberId.id().toString());
+        assertThat(response.adminIds()).contains(creatorId.id().toString());
         assertThat(response.memberPublicKeys()).containsEntry(creatorId.id().toString(), "key1");
 
         verify(userService).usersExist(argThat(set -> set.contains(creatorId) && set.contains(otherMemberId)));
@@ -134,7 +134,7 @@ class ConversationServiceTest {
 
         // Assert
         assertThat(response).isNotNull();
-        assertThat(response.memberIds()).containsExactly(creatorId);
-        assertThat(response.adminIds()).containsExactly(creatorId);
+        assertThat(response.memberIds()).containsExactly(creatorId.id().toString());
+        assertThat(response.adminIds()).containsExactly(creatorId.id().toString());
     }
 }

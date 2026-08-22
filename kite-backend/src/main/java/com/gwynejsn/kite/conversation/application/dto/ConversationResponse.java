@@ -1,7 +1,6 @@
 package com.gwynejsn.kite.conversation.application.dto;
 
 import com.gwynejsn.kite.conversation.domain.enums.ConversationType;
-import com.gwynejsn.kite.shared.domain.UserId;
 
 import java.time.Instant;
 import java.util.Map;
@@ -12,8 +11,9 @@ public record ConversationResponse(
         ConversationType type,
         String name,
         String conversationPhoto,
-        Set<UserId> memberIds,
-        Set<UserId> adminIds,
+        Set<String> memberIds,
+        Set<String> adminIds,
+        Map<String, MemberProfileResponse> memberProfiles,
         Map<String, String> memberPublicKeys,
         LastMessageResponse lastMessage,
         Instant createdAt,

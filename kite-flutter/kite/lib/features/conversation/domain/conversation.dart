@@ -1,5 +1,6 @@
 import 'package:kite/features/conversation/domain/conversation_type.dart';
 import 'package:kite/features/conversation/domain/last_message.dart';
+import 'package:kite/features/conversation/domain/member_profile.dart';
 
 class Conversation {
   final String id;
@@ -8,6 +9,7 @@ class Conversation {
   final String? conversationPhoto;
   final Set<String> memberIds;
   final Set<String> adminIds;
+  final Map<String, MemberProfile> memberProfiles;
   final Map<String, String> memberPublicKeys;
   final LastMessage? lastMessage;
   final DateTime createdAt;
@@ -20,6 +22,7 @@ class Conversation {
     this.conversationPhoto,
     required this.memberIds,
     required this.adminIds,
+    this.memberProfiles = const {},
     this.memberPublicKeys = const {},
     this.lastMessage,
     required this.createdAt,
@@ -56,6 +59,20 @@ class Conversation {
     return {};
   }
 
+  static Map<String, MemberProfile> _parseProfilesMap(dynamic obj) {
+    if (obj is Map) {
+      final Map<String, MemberProfile> map = {};
+      obj.forEach((key, value) {
+        if (key != null && value is Map) {
+          map[key.toString()] =
+              MemberProfile.fromJson(value as Map<String, dynamic>);
+        }
+      });
+      return map;
+    }
+    return {};
+  }
+
   factory Conversation.fromJson(Map<String, dynamic> json) {
     return Conversation(
       id: _parseId(json['id']),
@@ -69,6 +86,7 @@ class Conversation {
       conversationPhoto: json['conversationPhoto'] as String?,
       memberIds: _parseIdSet(json['memberIds']),
       adminIds: _parseIdSet(json['adminIds']),
+      memberProfiles: _parseProfilesMap(json['memberProfiles']),
       memberPublicKeys: _parseMap(json['memberPublicKeys']),
       lastMessage: json['lastMessage'] != null
           ? LastMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
@@ -89,6 +107,7 @@ class Conversation {
     String? conversationPhoto,
     Set<String>? memberIds,
     Set<String>? adminIds,
+    Map<String, MemberProfile>? memberProfiles,
     Map<String, String>? memberPublicKeys,
     LastMessage? lastMessage,
     DateTime? createdAt,
@@ -101,6 +120,7 @@ class Conversation {
       conversationPhoto: conversationPhoto ?? this.conversationPhoto,
       memberIds: memberIds ?? this.memberIds,
       adminIds: adminIds ?? this.adminIds,
+      memberProfiles: memberProfiles ?? this.memberProfiles,
       memberPublicKeys: memberPublicKeys ?? this.memberPublicKeys,
       lastMessage: lastMessage ?? this.lastMessage,
       createdAt: createdAt ?? this.createdAt,

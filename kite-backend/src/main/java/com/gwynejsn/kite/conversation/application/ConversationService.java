@@ -3,6 +3,7 @@ package com.gwynejsn.kite.conversation.application;
 import com.gwynejsn.kite.conversation.api.ConversationServiceApi;
 import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
 import com.gwynejsn.kite.conversation.application.dto.CreateGroupConversationRequest;
+import com.gwynejsn.kite.conversation.application.dto.MemberProfileResponse;
 import com.gwynejsn.kite.conversation.application.exceptions.ConversationAlreadyExistsException;
 import com.gwynejsn.kite.conversation.domain.Conversation;
 import com.gwynejsn.kite.conversation.domain.ConversationId;
@@ -107,12 +108,33 @@ public class ConversationService implements ConversationServiceApi {
     }
 
     /**
-     * helper that resolves name, photo, and member public keys
+     * helper that resolves name, photo, member public keys, and member profiles
      */
     private ConversationResponse mapToResponse(Conversation conversation, UserId currentUserId) {
         ConversationResponse baseResponse = INSTANCE.toConversationResponse(conversation);
         // <id, public key>
         Map<String, String> memberPublicKeys = userKeyService.getPublicKeysByUserIds(conversation.getMemberIds());
+
+        Map<String, MemberProfileResponse> memberProfiles = new java.util.HashMap<>();
+        try {
+            List<UserProfileResponse> profiles = userProfileService.getUserProfilesByUserIds(conversation.getMemberIds());
+            for (UserProfileResponse profile : profiles) {
+                if (profile.userId() != null) {
+                    memberProfiles.put(
+                            profile.userId(),
+                            new MemberProfileResponse(
+                                    profile.userId(),
+                                    profile.firstName(),
+                                    profile.lastName(),
+                                    profile.username(),
+                                    profile.profileImageLink()
+                            )
+                    );
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch member profiles for conversation {}", conversation.getId(), e);
+        }
 
         String name = baseResponse.name();
         String profilePhoto = baseResponse.conversationPhoto();
@@ -124,15 +146,25 @@ public class ConversationService implements ConversationServiceApi {
                     .findFirst();
 
             if (otherMember.isPresent()) {
-                try {
-                    UserProfileResponse profile = userProfileService.getUserProfile(otherMember.get());
-                    name = (profile.firstName() + " " + profile.lastName()).trim();
+                MemberProfileResponse otherProfile = memberProfiles.get(otherMember.get().id().toString());
+                if (otherProfile != null) {
+                    name = ((otherProfile.firstName() != null ? otherProfile.firstName() : "") + " " +
+                            (otherProfile.lastName() != null ? otherProfile.lastName() : "")).trim();
                     if (name.isEmpty()) {
-                        name = profile.username();
+                        name = otherProfile.username();
                     }
-                    profilePhoto = profile.profileImageLink();
-                } catch (Exception e) {
-                    log.warn("Could not fetch profile for user {}", otherMember.get());
+                    profilePhoto = otherProfile.profilePhoto();
+                } else {
+                    try {
+                        UserProfileResponse profile = userProfileService.getUserProfile(otherMember.get());
+                        name = (profile.firstName() + " " + profile.lastName()).trim();
+                        if (name.isEmpty()) {
+                            name = profile.username();
+                        }
+                        profilePhoto = profile.profileImageLink();
+                    } catch (Exception e) {
+                        log.warn("Could not fetch profile for user {}", otherMember.get());
+                    }
                 }
             }
         }
@@ -144,6 +176,7 @@ public class ConversationService implements ConversationServiceApi {
                 profilePhoto,
                 baseResponse.memberIds(),
                 baseResponse.adminIds(),
+                memberProfiles,
                 memberPublicKeys,
                 baseResponse.lastMessage(),
                 baseResponse.createdAt(),

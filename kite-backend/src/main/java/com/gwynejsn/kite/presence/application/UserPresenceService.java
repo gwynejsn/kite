@@ -33,8 +33,8 @@ public class UserPresenceService {
                 .findUserPresenceByUserId(userId)
                 .map(INSTANCE::toResponse)
                 .orElse(new UserPresenceResponse(
-                        new PresenceId(),
-                        userId,
+                        new PresenceId().id().toString(),
+                        userId.id().toString(),
                         PresenceStatus.OFFLINE,
                         Instant.now(),
                         Instant.now()
@@ -53,8 +53,8 @@ public class UserPresenceService {
             String strId = uId.id().toString();
             if (!map.containsKey(strId)) {
                 map.put(strId, new UserPresenceResponse(
-                        new PresenceId(),
-                        uId,
+                        new PresenceId().id().toString(),
+                        strId,
                         PresenceStatus.OFFLINE,
                         Instant.now(),
                         Instant.now()
@@ -104,9 +104,9 @@ public class UserPresenceService {
 
     public void broadcastPresenceUpdate(UserPresenceResponse presenceResponse) {
         if (presenceResponse.userId() != null) {
-            log.info("Broadcasting presence update for user {}: {}", presenceResponse.userId().id(), presenceResponse.status());
+            log.info("Broadcasting presence update for user {}: {}", presenceResponse.userId(), presenceResponse.status());
             messagingTemplate.convertAndSend(
-                    "/topic/presence." + presenceResponse.userId().id().toString(),
+                    "/topic/presence." + presenceResponse.userId(),
                     presenceResponse
             );
         }

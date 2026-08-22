@@ -7,4 +7,5 @@ import java.util.List;
 public interface UserProfileServiceApi {
     UserProfileResponse getUserProfile(UserId userId);
     List<UserProfileResponse> getUserProfiles(UserId currentId);
+    List<UserProfileResponse> getUserProfilesByUserIds(Iterable<UserId> userIds);
 }
