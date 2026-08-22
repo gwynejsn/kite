@@ -776,6 +776,8 @@ class _ConversationInfoSheet extends StatelessWidget {
             const SizedBox(height: 12),
             ...conversation.memberIds.map((mId) {
               final isCurrentUser = mId == currentUserId;
+              final isAdmin = conversation.adminIds.contains(mId);
+              final memberProfile = conversation.memberProfiles[mId];
 
               UserDiscovery? socialMatch;
               for (final p in socialPeople) {
@@ -789,7 +791,12 @@ class _ConversationInfoSheet extends StatelessWidget {
               String usernameStr;
               String photoUrl = '';
 
-              if (isCurrentUser && currentUserProfile != null) {
+              if (memberProfile != null) {
+                memberName = memberProfile.displayName;
+                if (isCurrentUser) memberName += ' (You)';
+                usernameStr = memberProfile.username;
+                photoUrl = memberProfile.profilePhoto ?? '';
+              } else if (isCurrentUser && currentUserProfile != null) {
                 final fn =
                     '${currentUserProfile.firstName} ${currentUserProfile.lastName}'
                         .trim();
@@ -805,10 +812,7 @@ class _ConversationInfoSheet extends StatelessWidget {
                 usernameStr = socialMatch.username;
                 photoUrl = socialMatch.profileImageLink;
               } else {
-                memberName =
-                    conversation.name != null && conversation.name!.isNotEmpty
-                    ? conversation.name!
-                    : 'Member';
+                memberName = isCurrentUser ? 'You' : 'Member';
                 usernameStr = mId.length > 8 ? mId.substring(0, 8) : mId;
               }
 
@@ -871,12 +875,44 @@ class _ConversationInfoSheet extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            memberName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  memberName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isAdmin) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'ADMIN',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           if (usernameStr.isNotEmpty)
                             Text(

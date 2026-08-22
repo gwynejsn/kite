@@ -22,6 +22,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   final TextEditingController _searchController = TextEditingController();
 
   final Set<String> _selectedMemberIds = {};
+  final Set<String> _selectedAdminIds = {};
   final List<UserDiscovery> _selectedMembers = [];
 
   List<UserDiscovery> _friends = [];
@@ -76,10 +77,21 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
     setState(() {
       if (_selectedMemberIds.contains(user.userId)) {
         _selectedMemberIds.remove(user.userId);
+        _selectedAdminIds.remove(user.userId);
         _selectedMembers.removeWhere((m) => m.userId == user.userId);
       } else {
         _selectedMemberIds.add(user.userId);
         _selectedMembers.add(user);
+      }
+    });
+  }
+
+  void _toggleAdmin(String userId) {
+    setState(() {
+      if (_selectedAdminIds.contains(userId)) {
+        _selectedAdminIds.remove(userId);
+      } else {
+        _selectedAdminIds.add(userId);
       }
     });
   }
@@ -112,6 +124,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         name: groupName,
         memberIds: _selectedMemberIds.toList(),
         photoUrl: photoUrl.isNotEmpty ? photoUrl : null,
+        adminIds: _selectedAdminIds.toList(),
       );
 
       if (mounted && newGroup != null) {
@@ -262,10 +275,13 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                     final name = displayName.isNotEmpty
                         ? displayName
                         : member.username;
+                    final isAdmin = _selectedAdminIds.contains(member.userId);
 
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: InputChip(
+                      child: FilterChip(
+                        selected: isAdmin,
+                        selectedColor: theme.colorScheme.primaryContainer,
                         avatar: CircleAvatar(
                           backgroundImage: member.profileImageLink.isNotEmpty
                               ? NetworkImage(member.profileImageLink)
@@ -277,7 +293,14 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                 )
                               : null,
                         ),
-                        label: Text(name),
+                        label: Text(
+                          isAdmin ? '$name (Admin)' : name,
+                          style: TextStyle(
+                            fontWeight:
+                                isAdmin ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        onSelected: (_) => _toggleAdmin(member.userId),
                         onDeleted: () => _toggleMember(member),
                         deleteIconColor: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -358,6 +381,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                 final friend = filteredFriends[index];
                                 final isSelected =
                                     _selectedMemberIds.contains(friend.userId);
+                                final isAdmin =
+                                    _selectedAdminIds.contains(friend.userId);
                                 final name =
                                     '${friend.firstName} ${friend.lastName}'
                                         .trim();
@@ -365,11 +390,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                     ? name
                                     : friend.username;
 
-                                return CheckboxListTile(
-                                  value: isSelected,
-                                  onChanged: (_) => _toggleMember(friend),
-                                  activeColor: theme.colorScheme.primary,
-                                  secondary: CircleAvatar(
+                                return ListTile(
+                                  leading: CircleAvatar(
                                     radius: 22,
                                     backgroundColor:
                                         theme.colorScheme.primaryContainer,
@@ -389,11 +411,38 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                           )
                                         : null,
                                   ),
-                                  title: Text(
-                                    displayName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  title: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          displayName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isAdmin) ...[
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.primaryContainer,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            'ADMIN',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: theme.colorScheme
+                                                  .onPrimaryContainer,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                      ],
+                                    ],
                                   ),
                                   subtitle: Text(
                                     '@${friend.username}',
@@ -402,6 +451,34 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                       color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (isSelected)
+                                        IconButton(
+                                          icon: Icon(
+                                            isAdmin
+                                                ? Icons.admin_panel_settings_rounded
+                                                : Icons.admin_panel_settings_outlined,
+                                            color: isAdmin
+                                                ? theme.colorScheme.primary
+                                                : theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                          tooltip: isAdmin
+                                              ? 'Remove Admin Role'
+                                              : 'Make Group Admin',
+                                          onPressed: () =>
+                                              _toggleAdmin(friend.userId),
+                                        ),
+                                      Checkbox(
+                                        value: isSelected,
+                                        onChanged: (_) =>
+                                            _toggleMember(friend),
+                                        activeColor: theme.colorScheme.primary,
+                                      ),
+                                    ],
+                                  ),
+                                  onTap: () => _toggleMember(friend),
                                 );
                               },
                             ),
