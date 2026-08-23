@@ -10,6 +10,7 @@ class UserDiscovery {
   final RelationStatus? relationStatus;
   final bool? isRequester;
   final String? relationId;
+  final String? publicKey;
 
   const UserDiscovery({
     required this.userId,
@@ -21,6 +22,7 @@ class UserDiscovery {
     this.relationStatus,
     this.isRequester,
     this.relationId,
+    this.publicKey,
   });
 
   factory UserDiscovery.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class UserDiscovery {
           : null,
       isRequester: json['isRequester'] as bool?,
       relationId: json['relationId'] as String?,
+      publicKey: json['publicKey'] as String?,
     );
   }
 }

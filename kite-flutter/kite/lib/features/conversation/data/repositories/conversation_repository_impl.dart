@@ -35,6 +35,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
     required String plainText,
     String? recipientPublicKey,
     Map<String, String>? memberPublicKeys,
+    String? groupKeyBase64,
     MessageType messageType = MessageType.text,
     String? mediaUrl,
     String? replyToMessageId,
@@ -43,26 +44,41 @@ class ConversationRepositoryImpl implements ConversationRepository {
 
     try {
       final senderPublicKey = await encryptionService.initAndGetPublicKey();
-      final Map<String, String> finalMemberKeys = {};
 
-      if (memberPublicKeys != null && memberPublicKeys.isNotEmpty) {
-        finalMemberKeys.addAll(memberPublicKeys);
+      if (groupKeyBase64 != null && groupKeyBase64.isNotEmpty) {
+        final res = await encryptionService.encryptWithGroupKey(
+          plainText: plainText,
+          groupKeyBase64: groupKeyBase64,
+        );
+        encryptedPayload = EncryptedPayload(
+          cipherText: res['cipherText'] as String,
+          nonce: res['nonce'] as String?,
+          mac: res['mac'] as String?,
+          senderPublicKey:
+              res['senderPublicKey'] as String? ?? senderPublicKey,
+        );
+      } else {
+        final Map<String, String> finalMemberKeys = {};
+
+        if (memberPublicKeys != null && memberPublicKeys.isNotEmpty) {
+          finalMemberKeys.addAll(memberPublicKeys);
+        }
+
+        final envelopeRes = await encryptionService.encryptEnvelope(
+          plainText: plainText,
+          memberPublicKeys: finalMemberKeys,
+        );
+
+        encryptedPayload = EncryptedPayload(
+          cipherText: envelopeRes['cipherText'] as String? ?? plainText,
+          nonce: envelopeRes['nonce'] as String?,
+          mac: envelopeRes['mac'] as String?,
+          senderPublicKey:
+              envelopeRes['senderPublicKey'] as String? ?? senderPublicKey,
+          encryptedGroupKeys:
+              envelopeRes['encryptedGroupKeys'] as Map<String, String>?,
+        );
       }
-
-      final envelopeRes = await encryptionService.encryptEnvelope(
-        plainText: plainText,
-        memberPublicKeys: finalMemberKeys,
-      );
-
-      encryptedPayload = EncryptedPayload(
-        cipherText: envelopeRes['cipherText'] as String? ?? plainText,
-        nonce: envelopeRes['nonce'] as String?,
-        mac: envelopeRes['mac'] as String?,
-        senderPublicKey:
-            envelopeRes['senderPublicKey'] as String? ?? senderPublicKey,
-        encryptedGroupKeys:
-            envelopeRes['encryptedGroupKeys'] as Map<String, String>?,
-      );
     } catch (e) {
       debugPrint('Error encrypting message: $e');
       final senderPublicKey = await encryptionService.initAndGetPublicKey();
@@ -78,6 +94,78 @@ class ConversationRepositoryImpl implements ConversationRepository {
       messageType: messageType,
       mediaUrl: mediaUrl,
       replyToMessageId: replyToMessageId,
+    );
+  }
+
+  @override
+  Future<Conversation> createGroupConversation({
+    required String conversationName,
+    required List<String> memberIds,
+    String? conversationPhoto,
+    List<String>? adminIds,
+    Map<String, String>? groupKeyMap,
+  }) {
+    return remoteDatasource.createGroupConversation(
+      conversationName: conversationName,
+      memberIds: memberIds,
+      conversationPhoto: conversationPhoto,
+      adminIds: adminIds,
+      groupKeyMap: groupKeyMap,
+    );
+  }
+
+  @override
+  Future<Conversation> addMembers({
+    required String conversationId,
+    required List<String> memberIds,
+    Map<String, String>? groupKeyMap,
+  }) {
+    return remoteDatasource.addMembers(
+      conversationId: conversationId,
+      memberIds: memberIds,
+      groupKeyMap: groupKeyMap,
+    );
+  }
+
+  @override
+  Future<Conversation> kickMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) {
+    return remoteDatasource.kickMember(
+      conversationId: conversationId,
+      targetMemberId: targetMemberId,
+    );
+  }
+
+  @override
+  Future<Conversation> promoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) {
+    return remoteDatasource.promoteMember(
+      conversationId: conversationId,
+      targetMemberId: targetMemberId,
+    );
+  }
+
+  @override
+  Future<Conversation> demoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) {
+    return remoteDatasource.demoteMember(
+      conversationId: conversationId,
+      targetMemberId: targetMemberId,
+    );
+  }
+
+  @override
+  Future<void> leaveGroup({
+    required String conversationId,
+  }) {
+    return remoteDatasource.leaveGroup(
+      conversationId: conversationId,
     );
   }
 

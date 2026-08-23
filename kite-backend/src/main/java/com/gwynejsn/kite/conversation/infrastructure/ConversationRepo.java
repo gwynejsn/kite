@@ -18,4 +18,6 @@ public interface ConversationRepo extends MongoRepository<Conversation, UUID> {
     Optional<List<Conversation>> findMyConversations(UserId senderId);
 
     Optional<Conversation> findConversationById(ConversationId id);
+
+    boolean existsByName(String name);
 }

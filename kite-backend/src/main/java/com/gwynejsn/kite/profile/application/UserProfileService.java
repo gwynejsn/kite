@@ -46,6 +46,18 @@ public class UserProfileService implements UserProfileServiceApi {
                 .toList();
     }
 
+    @Override
+    public List<UserProfileResponse> getUserProfilesByUserIds(Iterable<UserId> userIds) {
+        if (userIds == null) {
+            return List.of();
+        }
+        return userProfileRepo
+                .findUserProfileByUserIdIn(userIds)
+                .stream()
+                .map(this::toResponseWithKey)
+                .toList();
+    }
+
     @PreAuthorize("hasRole('ADMIN')")
     public List<UserProfileResponse> getUserProfiles() {
         return userProfileRepo

@@ -49,17 +49,32 @@ class EncryptedPayload {
   Future<String> decrypt(
     EncryptionService encryptionService, {
     String? currentUserId,
+    String? groupKeyBase64,
   }) async {
     if (cipherText.isEmpty) return '';
 
-    if (nonce != null && mac != null && senderPublicKey != null) {
+    if (nonce != null && mac != null) {
       final payloadMap = <String, String>{
         'cipherText': cipherText,
         'nonce': nonce!,
         'mac': mac!,
       };
 
-      if (encryptedGroupKeys != null && encryptedGroupKeys!.isNotEmpty) {
+      if (groupKeyBase64 != null && groupKeyBase64.isNotEmpty) {
+        try {
+          final result = await encryptionService.decryptWithGroupKey(
+            payload: payloadMap,
+            groupKeyBase64: groupKeyBase64,
+          );
+          if (result.isNotEmpty) return result;
+        } catch (e) {
+          debugPrint('Group key decryption failed: $e');
+        }
+      }
+
+      if (senderPublicKey != null &&
+          encryptedGroupKeys != null &&
+          encryptedGroupKeys!.isNotEmpty) {
         // 1. Try key for currentUserId first
         if (currentUserId != null &&
             encryptedGroupKeys!.containsKey(currentUserId)) {

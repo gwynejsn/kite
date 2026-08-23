@@ -10,4 +10,26 @@ abstract class EncryptionService {
     required Map<String, String> payload,
     required String senderPublicKeyBase64,
   });
+
+  Future<String> generateGroupKey();
+
+  Future<String> encryptGroupKeyForRecipient({
+    required String groupKeyBase64,
+    required String recipientPublicKeyBase64,
+  });
+
+  Future<String> decryptGroupKey({
+    required String encryptedGroupKey,
+    String? senderPublicKeyBase64,
+  });
+
+  Future<Map<String, dynamic>> encryptWithGroupKey({
+    required String plainText,
+    required String groupKeyBase64,
+  });
+
+  Future<String> decryptWithGroupKey({
+    required Map<String, String> payload,
+    required String groupKeyBase64,
+  });
 }

@@ -11,6 +11,7 @@ public record UserDiscoveryResponse(
         String bio,
         RelationStatus relationStatus,
         Boolean isRequester,
-        String relationId
+        String relationId,
+        String publicKey
 ) {
 }

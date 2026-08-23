@@ -1,5 +1,6 @@
 package com.gwynejsn.kite.security.application;
 
+import com.gwynejsn.kite.security.api.UserServiceApi;
 import com.gwynejsn.kite.shared.exceptions.UserNotFoundException;
 import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.domain.events.UserDeletedEvent;
@@ -11,10 +12,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.*;
+import java.util.stream.Stream;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class AccountService {
+public class AccountService implements UserServiceApi {
     private final UserRepo userRepo;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -31,5 +35,14 @@ public class AccountService {
         return userRepo.findUserById(userId)
                 .map(User::getPublicKey)
                 .orElseThrow(() -> new UserNotFoundException("User " + userId + " not found."));
+    }
+
+    @Override
+    public void usersExist(Set<UserId> members) {
+        members
+                .forEach(userId ->
+                        userRepo.findUserById(userId)
+                                .orElseThrow(() -> new UserNotFoundException(userId.id() + " not Found!"))
+                );
     }
 }

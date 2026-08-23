@@ -8,9 +8,23 @@ class ConversationController extends ValueNotifier<ConversationState> {
   final ConversationRepository _repository;
   void Function({Map<String, String>? unsubscribeHeaders})? _stompSubscription;
 
+  String? _currentUserId;
+
   ConversationController(this._repository) : super(const ConversationState());
 
+  void updateCurrentUser(String? userId) {
+    if (userId != null &&
+        userId.isNotEmpty &&
+        (_currentUserId != userId || _stompSubscription == null)) {
+      _currentUserId = userId;
+      _subscribeToRealtimeUpdates(userId);
+    }
+  }
+
   Future<void> fetchConversations({String? currentUserId}) async {
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      _currentUserId = currentUserId;
+    }
     value = value.copyWith(isLoading: true, errorMessage: null);
 
     try {
@@ -20,8 +34,9 @@ class ConversationController extends ValueNotifier<ConversationState> {
         conversations: conversations,
       );
 
-      if (currentUserId != null && currentUserId.isNotEmpty) {
-        _subscribeToRealtimeUpdates(currentUserId);
+      final activeUserId = _currentUserId ?? currentUserId;
+      if (activeUserId != null && activeUserId.isNotEmpty) {
+        _subscribeToRealtimeUpdates(activeUserId);
       }
     } on AuthenticationException catch (e) {
       value = value.copyWith(
@@ -58,9 +73,150 @@ class ConversationController extends ValueNotifier<ConversationState> {
     if (index != -1) {
       list.removeAt(index);
     }
-    list.insert(0, updatedConv);
+
+    if (_currentUserId == null || updatedConv.memberIds.contains(_currentUserId)) {
+      list.insert(0, updatedConv);
+    }
 
     value = value.copyWith(conversations: list);
+  }
+
+  Future<Conversation?> createGroupConversation({
+    required String name,
+    required List<String> memberIds,
+    String? photoUrl,
+    List<String>? adminIds,
+    Map<String, String>? groupKeyMap,
+  }) async {
+    try {
+      final Conversation newGroup = await _repository.createGroupConversation(
+        conversationName: name,
+        memberIds: memberIds,
+        conversationPhoto: photoUrl,
+        adminIds: adminIds,
+        groupKeyMap: groupKeyMap,
+      );
+
+      final list = List<Conversation>.from(value.conversations);
+      final index = list.indexWhere((c) => c.id == newGroup.id);
+      if (index != -1) {
+        list.removeAt(index);
+      }
+      list.insert(0, newGroup);
+
+      value = value.copyWith(conversations: list);
+      return newGroup;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<Conversation?> addMembersToGroup({
+    required String conversationId,
+    required List<String> memberIds,
+    Map<String, String>? groupKeyMap,
+  }) async {
+    try {
+      final updatedConv = await _repository.addMembers(
+        conversationId: conversationId,
+        memberIds: memberIds,
+        groupKeyMap: groupKeyMap,
+      );
+
+      _onRealtimeConversationUpdate(updatedConv);
+      return updatedConv;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<Conversation?> kickMemberFromGroup({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final updatedConv = await _repository.kickMember(
+        conversationId: conversationId,
+        targetMemberId: targetMemberId,
+      );
+
+      _onRealtimeConversationUpdate(updatedConv);
+      return updatedConv;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<Conversation?> promoteMemberInGroup({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final updatedConv = await _repository.promoteMember(
+        conversationId: conversationId,
+        targetMemberId: targetMemberId,
+      );
+
+      _onRealtimeConversationUpdate(updatedConv);
+      return updatedConv;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<Conversation?> demoteMemberInGroup({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final updatedConv = await _repository.demoteMember(
+        conversationId: conversationId,
+        targetMemberId: targetMemberId,
+      );
+
+      _onRealtimeConversationUpdate(updatedConv);
+      return updatedConv;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> leaveGroupConversation({
+    required String conversationId,
+  }) async {
+    try {
+      await _repository.leaveGroup(conversationId: conversationId);
+
+      final list = List<Conversation>.from(value.conversations);
+      list.removeWhere((c) => c.id == conversationId);
+      value = value.copyWith(conversations: list);
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
   }
 
   @override

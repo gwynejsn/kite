@@ -12,9 +12,43 @@ abstract interface class ConversationRepository {
     required String plainText,
     String? recipientPublicKey,
     Map<String, String>? memberPublicKeys,
+    String? groupKeyBase64,
     MessageType messageType = MessageType.text,
     String? mediaUrl,
     String? replyToMessageId,
+  });
+
+  Future<Conversation> createGroupConversation({
+    required String conversationName,
+    required List<String> memberIds,
+    String? conversationPhoto,
+    List<String>? adminIds,
+    Map<String, String>? groupKeyMap,
+  });
+
+  Future<Conversation> addMembers({
+    required String conversationId,
+    required List<String> memberIds,
+    Map<String, String>? groupKeyMap,
+  });
+
+  Future<Conversation> kickMember({
+    required String conversationId,
+    required String targetMemberId,
+  });
+
+  Future<Conversation> promoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  });
+
+  Future<Conversation> demoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  });
+
+  Future<void> leaveGroup({
+    required String conversationId,
   });
 
   Future<void> connectWebsocket(Function()? onConnect);

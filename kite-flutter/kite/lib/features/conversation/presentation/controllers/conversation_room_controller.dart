@@ -70,6 +70,7 @@ class ConversationRoomController extends ValueNotifier<ConversationRoomState> {
     required String currentUserId,
     String? recipientPublicKey,
     Map<String, String>? memberPublicKeys,
+    String? groupKeyBase64,
   }) async {
     if (content.trim().isEmpty) return;
 
@@ -95,6 +96,7 @@ class ConversationRoomController extends ValueNotifier<ConversationRoomState> {
         plainText: content.trim(),
         recipientPublicKey: recipientPublicKey,
         memberPublicKeys: memberPublicKeys,
+        groupKeyBase64: groupKeyBase64,
       );
 
       if (sentMessage != null) {

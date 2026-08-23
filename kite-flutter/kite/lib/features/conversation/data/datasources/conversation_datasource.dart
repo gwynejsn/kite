@@ -97,6 +97,177 @@ class ConversationDatasource {
     }
   }
 
+  Future<Conversation> createGroupConversation({
+    required String conversationName,
+    required List<String> memberIds,
+    String? conversationPhoto,
+    List<String>? adminIds,
+    Map<String, String>? groupKeyMap,
+  }) async {
+    try {
+      final Map<String, dynamic> body = {
+        'conversationName': conversationName,
+        'membersId': memberIds,
+      };
+      if (conversationPhoto != null && conversationPhoto.isNotEmpty) {
+        body['conversationPhoto'] = conversationPhoto;
+      }
+      if (adminIds != null) {
+        body['adminsId'] = adminIds;
+      }
+      if (groupKeyMap != null && groupKeyMap.isNotEmpty) {
+        body['groupKeyMap'] = groupKeyMap;
+      }
+
+      final response = await dio.post('/conversation/group/create', data: body);
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to create group conversation',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to create group conversation',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<Conversation> addMembers({
+    required String conversationId,
+    required List<String> memberIds,
+    Map<String, String>? groupKeyMap,
+  }) async {
+    try {
+      final Map<String, dynamic> body = {
+        'memberIds': memberIds,
+      };
+      if (groupKeyMap != null && groupKeyMap.isNotEmpty) {
+        body['groupKeyMap'] = groupKeyMap;
+      }
+
+      final response = await dio.post(
+        '/conversation/$conversationId/members/add',
+        data: body,
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to add members',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to add members',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<Conversation> kickMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/conversation/$conversationId/members/kick/$targetMemberId',
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to kick member',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to kick member',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<Conversation> promoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/conversation/$conversationId/members/promote/$targetMemberId',
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to promote member',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to promote member',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<Conversation> demoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/conversation/$conversationId/members/demote/$targetMemberId',
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to demote member',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to demote member',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<void> leaveGroup({
+    required String conversationId,
+  }) async {
+    try {
+      final response = await dio.post('/conversation/$conversationId/leave');
+
+      if (response.statusCode == 200) {
+        return;
+      }
+      throw AuthenticationException(
+        'Failed to leave group',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to leave group',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
   String _extractErrorMessage(DioException e, {required String fallback}) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||

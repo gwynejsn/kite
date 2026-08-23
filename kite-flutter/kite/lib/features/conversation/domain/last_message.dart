@@ -59,11 +59,13 @@ class LastMessage {
   Future<String> getDecryptedContent(
     EncryptionService encryptionService, {
     String? currentUserId,
+    String? groupKeyBase64,
   }) async {
     if (encryptedPayload != null) {
       final decrypted = await encryptedPayload!.decrypt(
         encryptionService,
         currentUserId: currentUserId,
+        groupKeyBase64: groupKeyBase64,
       );
       if (decrypted.isNotEmpty) return decrypted;
     }
