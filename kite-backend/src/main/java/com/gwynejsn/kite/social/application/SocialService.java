@@ -205,7 +205,8 @@ public class SocialService {
                             profile.bio(),
                             status,
                             isRequester,
-                            relationIdStr
+                            relationIdStr,
+                            profile.publicKey()
                     );
                 })
                 .toList();

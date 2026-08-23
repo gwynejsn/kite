@@ -33,11 +33,13 @@ class MessageResponse {
   Future<String> getDecryptedContent(
     EncryptionService encryptionService, {
     String? currentUserId,
+    String? groupKeyBase64,
   }) async {
     if (encryptedPayload == null) return '';
     return encryptedPayload!.decrypt(
       encryptionService,
       currentUserId: currentUserId,
+      groupKeyBase64: groupKeyBase64,
     );
   }
 

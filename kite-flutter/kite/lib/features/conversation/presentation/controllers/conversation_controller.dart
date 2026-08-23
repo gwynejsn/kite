@@ -12,8 +12,19 @@ class ConversationController extends ValueNotifier<ConversationState> {
 
   ConversationController(this._repository) : super(const ConversationState());
 
+  void updateCurrentUser(String? userId) {
+    if (userId != null &&
+        userId.isNotEmpty &&
+        (_currentUserId != userId || _stompSubscription == null)) {
+      _currentUserId = userId;
+      _subscribeToRealtimeUpdates(userId);
+    }
+  }
+
   Future<void> fetchConversations({String? currentUserId}) async {
-    _currentUserId = currentUserId;
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      _currentUserId = currentUserId;
+    }
     value = value.copyWith(isLoading: true, errorMessage: null);
 
     try {
@@ -23,8 +34,9 @@ class ConversationController extends ValueNotifier<ConversationState> {
         conversations: conversations,
       );
 
-      if (currentUserId != null && currentUserId.isNotEmpty) {
-        _subscribeToRealtimeUpdates(currentUserId);
+      final activeUserId = _currentUserId ?? currentUserId;
+      if (activeUserId != null && activeUserId.isNotEmpty) {
+        _subscribeToRealtimeUpdates(activeUserId);
       }
     } on AuthenticationException catch (e) {
       value = value.copyWith(
@@ -74,6 +86,7 @@ class ConversationController extends ValueNotifier<ConversationState> {
     required List<String> memberIds,
     String? photoUrl,
     List<String>? adminIds,
+    Map<String, String>? groupKeyMap,
   }) async {
     try {
       final Conversation newGroup = await _repository.createGroupConversation(
@@ -81,6 +94,7 @@ class ConversationController extends ValueNotifier<ConversationState> {
         memberIds: memberIds,
         conversationPhoto: photoUrl,
         adminIds: adminIds,
+        groupKeyMap: groupKeyMap,
       );
 
       final list = List<Conversation>.from(value.conversations);
@@ -104,11 +118,13 @@ class ConversationController extends ValueNotifier<ConversationState> {
   Future<Conversation?> addMembersToGroup({
     required String conversationId,
     required List<String> memberIds,
+    Map<String, String>? groupKeyMap,
   }) async {
     try {
       final updatedConv = await _repository.addMembers(
         conversationId: conversationId,
         memberIds: memberIds,
+        groupKeyMap: groupKeyMap,
       );
 
       _onRealtimeConversationUpdate(updatedConv);

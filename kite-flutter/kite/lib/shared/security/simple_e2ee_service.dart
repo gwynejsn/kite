@@ -154,6 +154,129 @@ class SimpleE2eeService implements EncryptionService {
     return utf8.decode(clearBytes);
   }
 
+  // generate secretKey using aes gcm
+  @override
+  Future<String> generateGroupKey() async {
+    final secretKey = await _cipherAlgorithm.newSecretKey();
+    final bytes = await secretKey.extractBytes();
+    return base64Encode(bytes);
+  }
+
+  // encrypt the secretKey generated using x25519
+  @override
+  Future<String> encryptGroupKeyForRecipient({
+    required String groupKeyBase64,
+    required String recipientPublicKeyBase64,
+  }) async {
+    final myKeyPair = await _loadLocalKeyPair();
+    final recipientPublicKey = SimplePublicKey(
+      base64Decode(recipientPublicKeyBase64),
+      type: KeyPairType.x25519,
+    );
+
+    final sharedSecretKey = await _keyAlgorithm.sharedSecretKey(
+      keyPair: myKeyPair,
+      remotePublicKey: recipientPublicKey,
+    );
+
+    final groupKeyBytes = base64Decode(groupKeyBase64);
+    final keyBox = await _cipherAlgorithm.encrypt(
+      groupKeyBytes,
+      secretKey: sharedSecretKey,
+    );
+
+    final myPublicKeyBase64 = await initAndGetPublicKey();
+
+    return '$myPublicKeyBase64:${base64Encode(keyBox.cipherText)}:${base64Encode(keyBox.nonce)}:${base64Encode(keyBox.mac.bytes)}';
+  }
+
+  // using the stored private key, unlock the encrypted group secret key
+  @override
+  Future<String> decryptGroupKey({
+    required String encryptedGroupKey,
+    String? senderPublicKeyBase64,
+  }) async {
+    final keyParts = encryptedGroupKey.split(':');
+    String senderPubKey;
+    int offset = 0;
+
+    if (keyParts.length >= 4) {
+      senderPubKey = keyParts[0];
+      offset = 1;
+    } else if (senderPublicKeyBase64 != null &&
+        senderPublicKeyBase64.isNotEmpty) {
+      senderPubKey = senderPublicKeyBase64;
+    } else {
+      throw Exception('Sender public key missing for decrypting group key');
+    }
+
+    final myKeyPair = await _loadLocalKeyPair();
+    final senderPublicKey = SimplePublicKey(
+      base64Decode(senderPubKey),
+      type: KeyPairType.x25519,
+    );
+
+    final sharedSecretKey = await _keyAlgorithm.sharedSecretKey(
+      keyPair: myKeyPair,
+      remotePublicKey: senderPublicKey,
+    );
+
+    final keyBox = SecretBox(
+      base64Decode(keyParts[offset]),
+      nonce: base64Decode(keyParts[offset + 1]),
+      mac: Mac(base64Decode(keyParts[offset + 2])),
+    );
+
+    final groupKeyBytes = await _cipherAlgorithm.decrypt(
+      keyBox,
+      secretKey: sharedSecretKey,
+    );
+
+    return base64Encode(groupKeyBytes);
+  }
+
+  // use aes to encrypt the message with the secret key being the group secret key
+  @override
+  Future<Map<String, dynamic>> encryptWithGroupKey({
+    required String plainText,
+    required String groupKeyBase64,
+  }) async {
+    final groupSecretKey = SecretKey(base64Decode(groupKeyBase64));
+    final secretBox = await _cipherAlgorithm.encrypt(
+      utf8.encode(plainText),
+      secretKey: groupSecretKey,
+    );
+
+    final senderPublicKey = await initAndGetPublicKey();
+
+    return {
+      'cipherText': base64Encode(secretBox.cipherText),
+      'nonce': base64Encode(secretBox.nonce),
+      'mac': base64Encode(secretBox.mac.bytes),
+      'senderPublicKey': senderPublicKey,
+    };
+  }
+
+  @override
+  Future<String> decryptWithGroupKey({
+    required Map<String, String> payload,
+    required String groupKeyBase64,
+  }) async {
+    final groupSecretKey = SecretKey(base64Decode(groupKeyBase64));
+    final secretBox = SecretBox(
+      base64Decode(payload['cipherText']!),
+      nonce: base64Decode(payload['nonce']!),
+      mac: Mac(base64Decode(payload['mac']!)),
+    );
+
+    final clearBytes = await _cipherAlgorithm.decrypt(
+      secretBox,
+      secretKey: groupSecretKey,
+    );
+
+    return utf8.decode(clearBytes);
+  }
+
   Future<SimpleKeyPair> _loadLocalKeyPair() async {
     String? privateKeyBase64 = await _getPrivateKey();
     if (privateKeyBase64 == null || privateKeyBase64.isEmpty) {

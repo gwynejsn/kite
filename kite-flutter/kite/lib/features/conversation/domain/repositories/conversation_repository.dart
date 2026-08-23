@@ -12,6 +12,7 @@ abstract interface class ConversationRepository {
     required String plainText,
     String? recipientPublicKey,
     Map<String, String>? memberPublicKeys,
+    String? groupKeyBase64,
     MessageType messageType = MessageType.text,
     String? mediaUrl,
     String? replyToMessageId,
@@ -22,11 +23,13 @@ abstract interface class ConversationRepository {
     required List<String> memberIds,
     String? conversationPhoto,
     List<String>? adminIds,
+    Map<String, String>? groupKeyMap,
   });
 
   Future<Conversation> addMembers({
     required String conversationId,
     required List<String> memberIds,
+    Map<String, String>? groupKeyMap,
   });
 
   Future<Conversation> kickMember({

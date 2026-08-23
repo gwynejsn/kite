@@ -15,6 +15,7 @@ public record ConversationResponse(
         Set<String> adminIds,
         Map<String, MemberProfileResponse> memberProfiles,
         Map<String, String> memberPublicKeys,
+        Map<String, String> groupKeyMap,
         LastMessageResponse lastMessage,
         Instant createdAt,
         Instant updatedAt

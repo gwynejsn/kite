@@ -59,7 +59,8 @@ class ConversationControllerTest {
                 List.of(member2Id.id().toString()),
                 "Group Chat",
                 "photo.png",
-                List.of()
+                List.of(),
+                Map.of()
         );
 
         ConversationResponse expectedResponse = new ConversationResponse(
@@ -71,6 +72,7 @@ class ConversationControllerTest {
                 Set.of(userId.id().toString()),
                 Map.of(),
                 Map.of(userId.id().toString(), "key1", member2Id.id().toString(), "key2"),
+                Map.of(),
                 null,
                 Instant.now(),
                 Instant.now()

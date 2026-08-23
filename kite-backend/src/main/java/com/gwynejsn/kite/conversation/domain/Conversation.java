@@ -10,7 +10,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Builder
@@ -31,6 +33,9 @@ public class Conversation {
 
     @Builder.Default
     private Set<UserId> adminIds = new HashSet<>();
+
+    @Builder.Default
+    private Map<String, String> groupKeyMap = new HashMap<>();
 
     private LastMessage lastMessage;
     private Instant createdAt;

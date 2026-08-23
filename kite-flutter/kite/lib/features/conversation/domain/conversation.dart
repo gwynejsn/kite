@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:kite/features/conversation/domain/conversation_type.dart';
 import 'package:kite/features/conversation/domain/last_message.dart';
 import 'package:kite/features/conversation/domain/member_profile.dart';
+import 'package:kite/shared/security/encryption_service.dart';
 
 class Conversation {
   final String id;
@@ -11,6 +13,7 @@ class Conversation {
   final Set<String> adminIds;
   final Map<String, MemberProfile> memberProfiles;
   final Map<String, String> memberPublicKeys;
+  final Map<String, String> groupKeyMap;
   final LastMessage? lastMessage;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -24,6 +27,7 @@ class Conversation {
     required this.adminIds,
     this.memberProfiles = const {},
     this.memberPublicKeys = const {},
+    this.groupKeyMap = const {},
     this.lastMessage,
     required this.createdAt,
     required this.updatedAt,
@@ -88,6 +92,7 @@ class Conversation {
       adminIds: _parseIdSet(json['adminIds']),
       memberProfiles: _parseProfilesMap(json['memberProfiles']),
       memberPublicKeys: _parseMap(json['memberPublicKeys']),
+      groupKeyMap: _parseMap(json['groupKeyMap']),
       lastMessage: json['lastMessage'] != null
           ? LastMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
           : null,
@@ -126,5 +131,31 @@ class Conversation {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  Future<String?> getGroupKey(
+    EncryptionService encryptionService, {
+    String? currentUserId,
+  }) async {
+    if (type != ConversationType.group || groupKeyMap.isEmpty) return null;
+    if (currentUserId != null && groupKeyMap.containsKey(currentUserId)) {
+      final encryptedGroupKey = groupKeyMap[currentUserId]!;
+      try {
+        return await encryptionService.decryptGroupKey(
+          encryptedGroupKey: encryptedGroupKey,
+        );
+      } catch (e) {
+        debugPrint('Failed to decrypt group key for user $currentUserId: $e');
+      }
+    }
+    for (final entry in groupKeyMap.entries) {
+      if (entry.key == currentUserId) continue;
+      try {
+        return await encryptionService.decryptGroupKey(
+          encryptedGroupKey: entry.value,
+        );
+      } catch (_) {}
+    }
+    return null;
   }
 }

@@ -61,7 +61,8 @@ class ConversationServiceTest {
                 List.of(otherMemberId.id().toString()),
                 groupName,
                 "photo.png",
-                List.of()
+                List.of(),
+                Map.of()
         );
 
         when(conversationRepo.existsByName(groupName)).thenReturn(false);
@@ -99,7 +100,8 @@ class ConversationServiceTest {
                 List.of(otherMemberId.id().toString()),
                 groupName,
                 "photo.png",
-                List.of()
+                List.of(),
+                Map.of()
         );
 
         when(conversationRepo.existsByName(groupName)).thenReturn(true);
@@ -120,6 +122,7 @@ class ConversationServiceTest {
         CreateGroupConversationRequest request = new CreateGroupConversationRequest(
                 null,
                 groupName,
+                null,
                 null,
                 null
         );

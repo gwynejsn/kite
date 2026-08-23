@@ -31,7 +31,7 @@ public class ConversationController {
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
-     * Get all of current user's conversations
+     * get all of current user's conversations
      */
     @GetMapping("/all")
     public ResponseEntity<List<ConversationResponse>> getInitialConversations(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
@@ -102,6 +102,7 @@ public class ConversationController {
         ConversationResponse response = conversationService.addMembersToGroup(
                 new ConversationId(conversationId),
                 request.memberIds(),
+                request.groupKeyMap(),
                 authenticatedUser.getUserId()
         );
         broadcastGroupConversationUpdate(response);

@@ -102,6 +102,7 @@ class ConversationDatasource {
     required List<String> memberIds,
     String? conversationPhoto,
     List<String>? adminIds,
+    Map<String, String>? groupKeyMap,
   }) async {
     try {
       final Map<String, dynamic> body = {
@@ -113,6 +114,9 @@ class ConversationDatasource {
       }
       if (adminIds != null) {
         body['adminsId'] = adminIds;
+      }
+      if (groupKeyMap != null && groupKeyMap.isNotEmpty) {
+        body['groupKeyMap'] = groupKeyMap;
       }
 
       final response = await dio.post('/conversation/group/create', data: body);
@@ -136,11 +140,19 @@ class ConversationDatasource {
   Future<Conversation> addMembers({
     required String conversationId,
     required List<String> memberIds,
+    Map<String, String>? groupKeyMap,
   }) async {
     try {
+      final Map<String, dynamic> body = {
+        'memberIds': memberIds,
+      };
+      if (groupKeyMap != null && groupKeyMap.isNotEmpty) {
+        body['groupKeyMap'] = groupKeyMap;
+      }
+
       final response = await dio.post(
         '/conversation/$conversationId/members/add',
-        data: {'memberIds': memberIds},
+        data: body,
       );
 
       if (response.statusCode == 200 && response.data is Map) {

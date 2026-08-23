@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 
 import java.util.List;
+import java.util.Map;
 
 public record CreateGroupConversationRequest (
         @NotEmpty(message = "Group member IDs must not be empty")
@@ -15,5 +16,7 @@ public record CreateGroupConversationRequest (
 
         String conversationPhoto,
 
-        List<String> adminsId
+        List<String> adminsId,
+
+        Map<String, String> groupKeyMap
 ){ }

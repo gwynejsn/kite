@@ -5,6 +5,7 @@ import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
 import com.gwynejsn.kite.conversation.application.dto.CreateGroupConversationRequest;
 import com.gwynejsn.kite.conversation.application.dto.MemberProfileResponse;
 import com.gwynejsn.kite.conversation.application.exceptions.ConversationAlreadyExistsException;
+import com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException;
 import com.gwynejsn.kite.conversation.domain.Conversation;
 import com.gwynejsn.kite.conversation.domain.ConversationId;
 import com.gwynejsn.kite.conversation.domain.enums.ConversationType;
@@ -63,7 +64,7 @@ public class ConversationService implements ConversationServiceApi {
     }
 
     /**
-     * Checks if the user is a member of a conversation
+     * checks if the user is a member of a conversation
      * @param conversationId
      * @param currentUserId
      * @return Conversation
@@ -178,6 +179,7 @@ public class ConversationService implements ConversationServiceApi {
                 baseResponse.adminIds(),
                 memberProfiles,
                 memberPublicKeys,
+                conversation.getGroupKeyMap(),
                 baseResponse.lastMessage(),
                 baseResponse.createdAt(),
                 baseResponse.updatedAt()
@@ -185,7 +187,7 @@ public class ConversationService implements ConversationServiceApi {
     }
 
     /**
-     * Creates a group conversation
+     * creates a group conversation
      * @param createGroupConversationRequest
      * @param creatorId
      * @return ConversationResponse
@@ -223,6 +225,7 @@ public class ConversationService implements ConversationServiceApi {
                 .conversationPhoto(createGroupConversationRequest.conversationPhoto())
                 .memberIds(members)
                 .adminIds(admins)
+                .groupKeyMap(createGroupConversationRequest.groupKeyMap() != null ? createGroupConversationRequest.groupKeyMap() : new java.util.HashMap<>())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -231,19 +234,22 @@ public class ConversationService implements ConversationServiceApi {
     }
 
     @Transactional
-    public ConversationResponse addMembersToGroup(ConversationId conversationId, List<String> newMemberIds, UserId currentUserId) {
+    public ConversationResponse addMembersToGroup(ConversationId conversationId, List<String> newMemberIds, Map<String, String> groupKeyMap, UserId currentUserId) {
         Conversation conversation = validateMember(conversationId, currentUserId);
         if (conversation.getType() != ConversationType.GROUP) {
             throw new IllegalArgumentException("Cannot add members to a direct conversation");
         }
         if (!conversation.getAdminIds().contains(currentUserId)) {
-            throw new com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException("Only admins can add members to the group");
+            throw new UserIsNotAnAdminException("Only admins can add members to the group");
         }
 
         Set<UserId> newMembers = UserMapper.INSTANCE.stringUserToUserIdSet(newMemberIds);
         if (newMembers != null && !newMembers.isEmpty()) {
             userService.usersExist(newMembers);
             conversation.getMemberIds().addAll(newMembers);
+            if (groupKeyMap != null && !groupKeyMap.isEmpty()) {
+                conversation.getGroupKeyMap().putAll(groupKeyMap);
+            }
             conversation.setUpdatedAt(Instant.now());
             conversationRepo.save(conversation);
         }
@@ -257,7 +263,7 @@ public class ConversationService implements ConversationServiceApi {
             throw new IllegalArgumentException("Cannot kick members from a direct conversation");
         }
         if (!conversation.getAdminIds().contains(currentUserId)) {
-            throw new com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException("Only admins can kick members from the group");
+            throw new UserIsNotAnAdminException("Only admins can kick members from the group");
         }
         if (targetMemberId.equals(currentUserId)) {
             throw new IllegalArgumentException("Admins cannot kick themselves. Use leave instead.");
@@ -287,7 +293,7 @@ public class ConversationService implements ConversationServiceApi {
             return mapToResponse(conversation, currentUserId);
         }
 
-        // Auto-promote another member to Admin if no admins remain
+        // auto-promote another member to Admin if no admins remain
         if (conversation.getAdminIds().isEmpty()) {
             UserId nextAdmin = conversation.getMemberIds().iterator().next();
             conversation.getAdminIds().add(nextAdmin);

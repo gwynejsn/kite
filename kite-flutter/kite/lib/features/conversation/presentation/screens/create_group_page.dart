@@ -6,6 +6,7 @@ import 'package:kite/features/profile/presentation/providers/user_profile_provid
 import 'package:kite/features/social/domain/repositories/social_repository.dart';
 import 'package:kite/features/social/domain/user_discovery.dart';
 import 'package:kite/shared/di/injection_container.dart';
+import 'package:kite/shared/security/encryption_service.dart';
 import 'package:provider/provider.dart';
 
 class CreateGroupPage extends StatefulWidget {
@@ -117,14 +118,47 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
     try {
       final controller = sl<ConversationController>();
+      final encryptionService = sl<EncryptionService>();
+      final currentUserId =
+          context.read<UserProfileProvider>().userProfile?.userId;
+
       final groupName = _nameController.text.trim();
       final photoUrl = _photoController.text.trim();
+
+      // 1. Generate new 256-bit AES Group Key
+      final groupKey = await encryptionService.generateGroupKey();
+
+      // 2. Encrypt Group Key for each group member
+      final Map<String, String> groupKeyMap = {};
+      final myPublicKey = await encryptionService.initAndGetPublicKey();
+
+      if (currentUserId != null) {
+        groupKeyMap[currentUserId] =
+            await encryptionService.encryptGroupKeyForRecipient(
+          groupKeyBase64: groupKey,
+          recipientPublicKeyBase64: myPublicKey,
+        );
+      }
+
+      for (final friend in _friends
+          .where((f) => _selectedMemberIds.contains(f.userId))) {
+        if (friend.publicKey != null && friend.publicKey!.isNotEmpty) {
+          groupKeyMap[friend.userId] =
+              await encryptionService.encryptGroupKeyForRecipient(
+            groupKeyBase64: groupKey,
+            recipientPublicKeyBase64: friend.publicKey!,
+          );
+        } else {
+          debugPrint('Warning: Public key missing for friend ${friend.userId}');
+        }
+      }
 
       final Conversation? newGroup = await controller.createGroupConversation(
         name: groupName,
         memberIds: _selectedMemberIds.toList(),
         photoUrl: photoUrl.isNotEmpty ? photoUrl : null,
         adminIds: _selectedAdminIds.toList(),
+        groupKeyMap: groupKeyMap,
       );
 
       if (mounted && newGroup != null) {

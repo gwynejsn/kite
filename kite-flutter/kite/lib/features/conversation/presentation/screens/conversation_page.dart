@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_state.dart';
 import 'package:kite/features/conversation/presentation/screens/conversation_room_page.dart';
 import 'package:kite/features/conversation/presentation/screens/create_group_page.dart';
-import 'package:kite/features/presence/presentation/presence_provider.dart';
-import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
-import 'package:kite/features/social/domain/user_discovery.dart';
-import 'package:kite/features/social/presentation/controllers/social_controller.dart';
+import 'package:kite/features/conversation/presentation/widgets/conversation_tile.dart';
 import 'package:kite/features/social/presentation/screens/social_page.dart';
 import 'package:kite/features/wingman/presentation/widgets/wingman_bottom_sheet.dart';
+import 'package:kite/features/presence/presentation/presence_provider.dart';
+import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
-import 'package:kite/shared/security/encryption_service.dart';
 import 'package:kite/shared/widgets/skeleton_loader.dart';
 import 'package:provider/provider.dart';
 
@@ -24,15 +21,20 @@ class ConversationPage extends StatefulWidget {
 
 class _ConversationPageState extends State<ConversationPage> {
   late final ConversationController _controller;
-  String? _lastSubscribedUserId;
-
-  bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     _controller = sl<ConversationController>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentUserId =
+            context.read<UserProfileProvider>().userProfile?.userId;
+        _controller.fetchConversations(currentUserId: currentUserId);
+      }
+    });
   }
 
   @override
@@ -41,86 +43,53 @@ class _ConversationPageState extends State<ConversationPage> {
     super.dispose();
   }
 
-  void _syncPresences(ConversationState state, String? currentUserId) {
-    if (state.conversations.isNotEmpty && currentUserId != null) {
-      final memberIds = state.conversations
-          .expand((c) => c.memberIds)
-          .where((id) => id != currentUserId && id.isNotEmpty)
-          .toSet();
-      if (memberIds.isNotEmpty) {
-        context.read<PresenceProvider>().fetchAndTrackPresences(memberIds);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final userId = context.watch<UserProfileProvider>().userProfile?.userId;
+    final theme = Theme.of(context);
+    final currentUserId =
+        context.watch<UserProfileProvider>().userProfile?.userId;
 
-    if (userId != null &&
-        userId.isNotEmpty &&
-        _lastSubscribedUserId != userId) {
-      _lastSubscribedUserId = userId;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _controller.fetchConversations(currentUserId: userId);
-      });
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      _controller.updateCurrentUser(currentUserId);
     }
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: _isSearching
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 18,
-                ),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Search chats...',
-                  hintStyle: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
                   border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
                 ),
-                onChanged: (_) => setState(() {}),
+                onChanged: (val) => setState(() {}),
               )
             : const Text(
-                'Chats',
+                'Kite',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
               ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.group_add_rounded),
-            tooltip: 'New Group Chat',
+            icon:
+                Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
             onPressed: () {
-              Navigator.push(
-                context,
-                _createSmoothSlideRoute(const CreateGroupPage()),
-              );
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) _searchController.clear();
+              });
             },
           ),
           IconButton(
-            icon: Icon(
-              _isSearching ? Icons.close_rounded : Icons.search_rounded,
-            ),
+            icon: const Icon(Icons.group_add_outlined),
+            tooltip: 'Create Group',
             onPressed: () {
-              setState(() {
-                if (_isSearching) {
-                  _isSearching = false;
-                  _searchController.clear();
-                } else {
-                  _isSearching = true;
-                }
-              });
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CreateGroupPage(),
+                ),
+              );
             },
           ),
         ],
@@ -128,546 +97,159 @@ class _ConversationPageState extends State<ConversationPage> {
       body: ValueListenableBuilder<ConversationState>(
         valueListenable: _controller,
         builder: (context, state, child) {
-          _syncPresences(state, userId);
+          if (state.conversations.isNotEmpty) {
+            final allMemberIds = <String>{};
+            for (final c in state.conversations) {
+              for (final mId in c.memberIds) {
+                if (mId != currentUserId && mId.isNotEmpty) {
+                  allMemberIds.add(mId);
+                }
+              }
+            }
+            if (allMemberIds.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  context
+                      .read<PresenceProvider>()
+                      .fetchAndTrackPresences(allMemberIds);
+                }
+              });
+            }
+          }
 
-          if (state.isLoading && state.conversations.isEmpty) {
-            return const _ConversationSkeletonList();
+          if (state.isLoading) {
+            return ListView.builder(
+              padding: const EdgeInsets.only(top: 8.0),
+              itemCount: 8,
+              itemBuilder: (context, index) => const SkeletonLoader(
+                child: ListTile(
+                  leading: CircleAvatar(radius: 28),
+                  title: SkeletonBox(width: 140, height: 16),
+                  subtitle: SkeletonBox(width: 200, height: 12),
+                ),
+              ),
+            );
           }
 
           if (state.errorMessage != null && state.conversations.isEmpty) {
-            return _ErrorView(
-              errorMessage: state.errorMessage!,
-              onRetry: () =>
-                  _controller.fetchConversations(currentUserId: userId),
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      size: 48,
+                      color: theme.colorScheme.error,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      state.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => _controller.fetchConversations(),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
             );
           }
 
-          if (state.conversations.isEmpty) {
-            return _EmptyConversationsView(
-              onRefresh: () =>
-                  _controller.fetchConversations(currentUserId: userId),
-            );
-          }
+          final searchQuery = _searchController.text.trim().toLowerCase();
+          final filteredList = state.conversations.where((c) {
+            if (searchQuery.isEmpty) return true;
+            final name = (c.name ?? '').toLowerCase();
+            return name.contains(searchQuery);
+          }).toList();
 
-          final query = _searchController.text.trim().toLowerCase();
-          final filteredConversations = query.isEmpty
-              ? state.conversations
-              : state.conversations.where((c) {
-                  final name = (c.name ?? '').toLowerCase();
-                  return name.contains(query);
-                }).toList();
-
-          if (filteredConversations.isEmpty && query.isNotEmpty) {
+          if (filteredList.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.search_off_rounded,
-                    size: 48,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    searchQuery.isNotEmpty
+                        ? Icons.search_off_rounded
+                        : Icons.chat_bubble_outline_rounded,
+                    size: 64,
+                    color:
+                        theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Text(
-                    'No chats matching "$query"',
+                    searchQuery.isNotEmpty
+                        ? 'No conversations match "$searchQuery"'
+                        : 'No conversations yet',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 15,
+                      fontSize: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  if (searchQuery.isEmpty)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SocialPage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.person_add_outlined),
+                      label: const Text('Connect with People'),
+                    ),
                 ],
               ),
             );
           }
 
           return RefreshIndicator(
-            onRefresh: () =>
-                _controller.fetchConversations(currentUserId: userId),
-            child: ListView(
-              children: [
-                _ActiveFriendsHorizontalBar(currentUserId: userId),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  itemCount: filteredConversations.length,
-                  separatorBuilder: (_, _) =>
-                      const Divider(height: 1, indent: 76),
-                  itemBuilder: (context, index) {
-                    return _ConversationTile(
-                      conversation: filteredConversations[index],
-                      currentUserId: userId,
-                    );
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        tooltip: 'Kite Wingman AI',
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        icon: const Icon(Icons.auto_awesome_rounded),
-        label: const Text(
-          'Wingman',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        onPressed: () => showWingmanBottomSheet(context),
-      ),
-    );
-  }
-}
-
-class _ConversationTile extends StatelessWidget {
-  final Conversation conversation;
-  final String? currentUserId;
-
-  const _ConversationTile({required this.conversation, this.currentUserId});
-
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays == 0) {
-      final hour = dateTime.hour > 12
-          ? dateTime.hour - 12
-          : (dateTime.hour == 0 ? 12 : dateTime.hour);
-      final minute = dateTime.minute.toString().padLeft(2, '0');
-      final period = dateTime.hour >= 12 ? 'PM' : 'AM';
-      return '$hour:$minute $period';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      return weekdays[dateTime.weekday - 1];
-    }
-    return '${dateTime.month}/${dateTime.day}/${dateTime.year}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final title = conversation.name != null && conversation.name!.isNotEmpty
-        ? conversation.name!
-        : 'Conversation';
-
-    final timestampStr = conversation.lastMessage != null
-        ? _formatTime(conversation.lastMessage!.timestamp)
-        : _formatTime(conversation.updatedAt);
-
-    final initials = title.isNotEmpty ? title[0].toUpperCase() : 'C';
-
-    final isOnline = context.watch<PresenceProvider>().isAnyMemberOnline(
-      conversation.memberIds,
-      currentUserId,
-    );
-
-    final isSentByMe =
-        conversation.lastMessage != null &&
-        currentUserId != null &&
-        conversation.lastMessage!.senderId == currentUserId;
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Stack(
-        children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            backgroundImage:
-                conversation.conversationPhoto != null &&
-                    conversation.conversationPhoto!.isNotEmpty
-                ? NetworkImage(conversation.conversationPhoto!)
-                : null,
-            child:
-                conversation.conversationPhoto == null ||
-                    conversation.conversationPhoto!.isEmpty
-                ? Text(
-                    initials,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  )
-                : null,
-          ),
-          if (isOnline)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.surface,
-                    width: 2.5,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ),
-          Text(
-            timestampStr,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4.0),
-        child: conversation.lastMessage != null
-            ? FutureBuilder<String>(
-                future: conversation.lastMessage!.getDecryptedContent(
-                  sl<EncryptionService>(),
-                  currentUserId: currentUserId,
-                ),
-                builder: (context, snapshot) {
-                  final text =
-                      snapshot.data ??
-                      (snapshot.connectionState == ConnectionState.waiting
-                          ? 'Loading message...'
-                          : 'Encrypted Message');
-                  return Row(
-                    children: [
-                      if (isSentByMe) ...[
-                        Icon(
-                          Icons.done_all_rounded,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      Expanded(
-                        child: Text(
-                          text,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              )
-            : Text(
-                'No messages yet',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 14,
-                ),
-              ),
-      ),
-      onTap: () {
-        Navigator.push(
-          context,
-          _createSmoothSlideRoute(
-            ConversationRoomPage(conversation: conversation),
-          ),
-        );
-      },
-    );
-  }
-}
-
-Route _createSmoothSlideRoute(Widget page) {
-  return PageRouteBuilder(
-    transitionDuration: const Duration(milliseconds: 300),
-    reverseTransitionDuration: const Duration(milliseconds: 250),
-    pageBuilder: (context, animation, secondaryAnimation) => page,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final slideAnimation =
-          Tween<Offset>(
-            begin: const Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(
-              parent: animation,
-              curve: Curves.fastOutSlowIn,
-              reverseCurve: Curves.fastOutSlowIn,
-            ),
-          );
-
-      return SlideTransition(position: slideAnimation, child: child);
-    },
-  );
-}
-
-class _EmptyConversationsView extends StatelessWidget {
-  final Future<void> Function() onRefresh;
-
-  const _EmptyConversationsView({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.6,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  size: 64,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No conversations yet',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Start a chat to get connected!',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
-                  onPressed: () {
+            onRefresh: () => _controller.fetchConversations(),
+            child: ListView.separated(
+              itemCount: filteredList.length,
+              separatorBuilder: (context, index) =>
+                  const Divider(height: 1, indent: 84),
+              itemBuilder: (context, index) {
+                final conv = filteredList[index];
+                return ConversationTile(
+                  conversation: conv,
+                  onTap: () {
                     Navigator.push(
                       context,
-                      _createSmoothSlideRoute(const SocialPage()),
+                      MaterialPageRoute(
+                        builder: (context) => ConversationRoomPage(
+                          conversation: conv,
+                        ),
+                      ),
                     );
                   },
-                  icon: const Icon(Icons.people_outline_rounded, size: 18),
-                  label: const Text(
-                    'Discover People',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
+                );
+              },
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  final String errorMessage;
-  final VoidCallback onRetry;
-
-  const _ErrorView({required this.errorMessage, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 48,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              errorMessage,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ConversationSkeletonList extends StatelessWidget {
-  const _ConversationSkeletonList();
-
-  @override
-  Widget build(BuildContext context) {
-    return SkeletonLoader(
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        itemCount: 8,
-        separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
-        itemBuilder: (context, index) {
-          return const ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            leading: SkeletonBox(width: 52, height: 52, borderRadius: 26),
-            title: Padding(
-              padding: EdgeInsets.only(bottom: 6.0),
-              child: SkeletonBox(width: 140, height: 16),
-            ),
-            subtitle: SkeletonBox(width: 220, height: 14),
           );
         },
       ),
-    );
-  }
-}
-
-class _ActiveFriendsHorizontalBar extends StatelessWidget {
-  final String? currentUserId;
-
-  const _ActiveFriendsHorizontalBar({required this.currentUserId});
-
-  @override
-  Widget build(BuildContext context) {
-    List<UserDiscovery> people = [];
-    try {
-      people = sl<SocialController>().value.people;
-    } catch (_) {}
-
-    final presenceProvider = context.watch<PresenceProvider>();
-    final onlinePeople = people.where((p) {
-      return p.userId != currentUserId &&
-          presenceProvider.isUserOnline(p.userId);
-    }).toList();
-
-    if (onlinePeople.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 16, top: 12, bottom: 8),
-          child: Text(
-            'ACTIVE NOW',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-              color: Colors.grey,
-            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showWingmanBottomSheet(context);
+        },
+        tooltip: 'Kite AI Wingman',
+        child: Image.asset(
+          'assets/images/kite_icon.png',
+          width: 28,
+          height: 28,
+          errorBuilder: (context, error, stackTrace) => const Icon(
+            Icons.auto_awesome_rounded,
           ),
         ),
-        SizedBox(
-          height: 86,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: onlinePeople.length,
-            itemBuilder: (context, index) {
-              final user = onlinePeople[index];
-              final name = '${user.firstName} ${user.lastName}'.trim();
-              final displayName = name.isNotEmpty ? name : user.username;
-              final initials = displayName.isNotEmpty
-                  ? displayName[0].toUpperCase()
-                  : 'U';
-
-              return Container(
-                width: 68,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                child: Column(
-                  children: [
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          backgroundImage: user.profileImageLink.isNotEmpty
-                              ? NetworkImage(user.profileImageLink)
-                              : null,
-                          child: user.profileImageLink.isEmpty
-                              ? Text(
-                                  initials,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.surface,
-                              width: 2.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      displayName.split(' ')[0],
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-        const Divider(height: 1),
-      ],
+      ),
     );
   }
 }
