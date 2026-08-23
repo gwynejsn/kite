@@ -159,6 +159,48 @@ class ConversationController extends ValueNotifier<ConversationState> {
     }
   }
 
+  Future<Conversation?> promoteMemberInGroup({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final updatedConv = await _repository.promoteMember(
+        conversationId: conversationId,
+        targetMemberId: targetMemberId,
+      );
+
+      _onRealtimeConversationUpdate(updatedConv);
+      return updatedConv;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<Conversation?> demoteMemberInGroup({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final updatedConv = await _repository.demoteMember(
+        conversationId: conversationId,
+        targetMemberId: targetMemberId,
+      );
+
+      _onRealtimeConversationUpdate(updatedConv);
+      return updatedConv;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
   Future<void> leaveGroupConversation({
     required String conversationId,
   }) async {

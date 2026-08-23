@@ -5,16 +5,22 @@ class MemberTile extends StatelessWidget {
   final String memberId;
   final MemberProfile? profile;
   final bool isAdmin;
-  final bool canKick;
+  final bool isCurrentAdmin;
+  final bool isMe;
   final VoidCallback? onKick;
+  final VoidCallback? onPromote;
+  final VoidCallback? onDemote;
 
   const MemberTile({
     super.key,
     required this.memberId,
     this.profile,
     required this.isAdmin,
-    required this.canKick,
+    required this.isCurrentAdmin,
+    required this.isMe,
     this.onKick,
+    this.onPromote,
+    this.onDemote,
   });
 
   @override
@@ -84,15 +90,59 @@ class MemberTile extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        trailing: canKick
-            ? IconButton(
-                icon: const Icon(
-                  Icons.person_remove_outlined,
-                  color: Colors.redAccent,
-                  size: 20,
+        trailing: (isCurrentAdmin && !isMe)
+            ? PopupMenuButton<String>(
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                tooltip: 'Kick Member',
-                onPressed: onKick,
+                onSelected: (action) {
+                  if (action == 'promote' && onPromote != null) {
+                    onPromote!();
+                  } else if (action == 'demote' && onDemote != null) {
+                    onDemote!();
+                  } else if (action == 'kick' && onKick != null) {
+                    onKick!();
+                  }
+                },
+                itemBuilder: (context) => [
+                  if (!isAdmin)
+                    const PopupMenuItem(
+                      value: 'promote',
+                      child: Row(
+                        children: [
+                          Icon(Icons.shield_outlined, size: 18),
+                          SizedBox(width: 10),
+                          Text('Make Admin'),
+                        ],
+                      ),
+                    )
+                  else
+                    const PopupMenuItem(
+                      value: 'demote',
+                      child: Row(
+                        children: [
+                          Icon(Icons.remove_moderator_outlined,
+                              size: 18, color: Colors.orange),
+                          SizedBox(width: 10),
+                          Text('Dismiss as Admin',
+                              style: TextStyle(color: Colors.orange)),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuItem(
+                    value: 'kick',
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_remove_outlined,
+                            size: 18, color: Colors.red),
+                        SizedBox(width: 10),
+                        Text('Remove from Group',
+                            style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               )
             : null,
       ),

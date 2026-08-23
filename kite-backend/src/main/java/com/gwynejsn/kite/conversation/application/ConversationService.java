@@ -235,13 +235,7 @@ public class ConversationService implements ConversationServiceApi {
 
     @Transactional
     public ConversationResponse addMembersToGroup(ConversationId conversationId, List<String> newMemberIds, Map<String, String> groupKeyMap, UserId currentUserId) {
-        Conversation conversation = validateMember(conversationId, currentUserId);
-        if (conversation.getType() != ConversationType.GROUP) {
-            throw new IllegalArgumentException("Cannot add members to a direct conversation");
-        }
-        if (!conversation.getAdminIds().contains(currentUserId)) {
-            throw new UserIsNotAnAdminException("Only admins can add members to the group");
-        }
+        Conversation conversation = validateAdminAction(conversationId, null, currentUserId);
 
         Set<UserId> newMembers = UserMapper.INSTANCE.stringUserToUserIdSet(newMemberIds);
         if (newMembers != null && !newMembers.isEmpty()) {
@@ -258,16 +252,7 @@ public class ConversationService implements ConversationServiceApi {
 
     @Transactional
     public ConversationResponse kickMemberFromGroup(ConversationId conversationId, UserId targetMemberId, UserId currentUserId) {
-        Conversation conversation = validateMember(conversationId, currentUserId);
-        if (conversation.getType() != ConversationType.GROUP) {
-            throw new IllegalArgumentException("Cannot kick members from a direct conversation");
-        }
-        if (!conversation.getAdminIds().contains(currentUserId)) {
-            throw new UserIsNotAnAdminException("Only admins can kick members from the group");
-        }
-        if (targetMemberId.equals(currentUserId)) {
-            throw new IllegalArgumentException("Admins cannot kick themselves. Use leave instead.");
-        }
+        Conversation conversation = validateAdminAction(conversationId, targetMemberId, currentUserId);
 
         conversation.getMemberIds().remove(targetMemberId);
         conversation.getAdminIds().remove(targetMemberId);
@@ -304,5 +289,39 @@ public class ConversationService implements ConversationServiceApi {
         conversationRepo.save(conversation);
 
         return mapToResponse(conversation, currentUserId);
+    }
+
+    public ConversationResponse promoteMember(ConversationId conversationId, UserId targetMemberId, UserId currentUserId) {
+        Conversation conversation = validateAdminAction(conversationId, targetMemberId, currentUserId);
+
+        conversation.getAdminIds().add(targetMemberId);
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepo.save(conversation);
+
+        return mapToResponse(conversation, currentUserId);
+    }
+
+    public ConversationResponse demoteMember(ConversationId conversationId, UserId targetMemberId, UserId currentUserId) {
+        Conversation conversation = validateAdminAction(conversationId, targetMemberId, currentUserId);
+
+        conversation.getAdminIds().remove(targetMemberId);
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepo.save(conversation);
+
+        return mapToResponse(conversation, currentUserId);
+    }
+
+    private Conversation validateAdminAction(ConversationId conversationId, UserId targetMemberId, UserId currentUserId) {
+        Conversation conversation = validateMember(conversationId, currentUserId);
+        if (conversation.getType() != ConversationType.GROUP) {
+            throw new IllegalArgumentException("Cannot do this in members from a direct conversation");
+        }
+        if (!conversation.getAdminIds().contains(currentUserId)) {
+            throw new UserIsNotAnAdminException("Only admins can do this in members from the group");
+        }
+        if (targetMemberId.equals(currentUserId)) {
+            throw new IllegalArgumentException("Admins cannot do this action to themselves.");
+        }
+        return conversation;
     }
 }

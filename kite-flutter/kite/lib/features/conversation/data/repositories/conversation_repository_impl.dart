@@ -139,6 +139,28 @@ class ConversationRepositoryImpl implements ConversationRepository {
   }
 
   @override
+  Future<Conversation> promoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) {
+    return remoteDatasource.promoteMember(
+      conversationId: conversationId,
+      targetMemberId: targetMemberId,
+    );
+  }
+
+  @override
+  Future<Conversation> demoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) {
+    return remoteDatasource.demoteMember(
+      conversationId: conversationId,
+      targetMemberId: targetMemberId,
+    );
+  }
+
+  @override
   Future<void> leaveGroup({
     required String conversationId,
   }) {

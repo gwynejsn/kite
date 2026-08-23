@@ -2,10 +2,7 @@ package com.gwynejsn.kite.conversation.web;
 
 import com.gwynejsn.kite.conversation.application.ConversationService;
 import com.gwynejsn.kite.conversation.application.MessageService;
-import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
-import com.gwynejsn.kite.conversation.application.dto.CreateGroupConversationRequest;
-import com.gwynejsn.kite.conversation.application.dto.MessageRequest;
-import com.gwynejsn.kite.conversation.application.dto.MessageResponse;
+import com.gwynejsn.kite.conversation.application.dto.*;
 import com.gwynejsn.kite.conversation.domain.Conversation;
 import com.gwynejsn.kite.conversation.domain.ConversationId;
 import com.gwynejsn.kite.shared.domain.UserId;
@@ -96,7 +93,7 @@ public class ConversationController {
     @PostMapping("/{conversationId}/members/add")
     public ResponseEntity<ConversationResponse> addMembersToGroup(
             @PathVariable String conversationId,
-            @Valid @RequestBody com.gwynejsn.kite.conversation.application.dto.AddGroupMembersRequest request,
+            @Valid @RequestBody AddGroupMembersRequest request,
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
         ConversationResponse response = conversationService.addMembersToGroup(
@@ -106,6 +103,38 @@ public class ConversationController {
                 authenticatedUser.getUserId()
         );
         broadcastGroupConversationUpdate(response);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{conversationId}/members/promote/{targetMemberId}")
+    public ResponseEntity<ConversationResponse> promoteMember(
+            @PathVariable String conversationId,
+            @PathVariable String targetMemberId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        ConversationResponse response = conversationService.promoteMember(
+                new ConversationId(conversationId),
+                new UserId(targetMemberId),
+                authenticatedUser.getUserId()
+        );
+        broadcastGroupConversationUpdate(response);
+        messagingTemplate.convertAndSend("/topic/user." + targetMemberId + ".conversations", response);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{conversationId}/members/demote/{targetMemberId}")
+    public ResponseEntity<ConversationResponse> demoteMember(
+            @PathVariable String conversationId,
+            @PathVariable String targetMemberId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        ConversationResponse response = conversationService.demoteMember(
+                new ConversationId(conversationId),
+                new UserId(targetMemberId),
+                authenticatedUser.getUserId()
+        );
+        broadcastGroupConversationUpdate(response);
+        messagingTemplate.convertAndSend("/topic/user." + targetMemberId + ".conversations", response);
         return ResponseEntity.ok(response);
     }
 

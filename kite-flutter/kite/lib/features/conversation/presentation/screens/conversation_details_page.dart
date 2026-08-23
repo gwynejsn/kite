@@ -78,6 +78,99 @@ class _ConversationDetailsPageState extends State<ConversationDetailsPage> {
     );
   }
 
+  void _confirmPromoteMember(
+      BuildContext context, String memberId, String memberName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Make Admin'),
+        content: Text('Are you sure you want to promote $memberName to an Admin?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await sl<ConversationController>().promoteMemberInGroup(
+                  conversationId: widget.conversation.id,
+                  targetMemberId: memberId,
+                );
+                if (mounted && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$memberName is now an Admin'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to promote member: ${e.toString()}'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Make Admin'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDemoteMember(
+      BuildContext context, String memberId, String memberName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Dismiss as Admin'),
+        content: Text('Are you sure you want to remove Admin privileges from $memberName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await sl<ConversationController>().demoteMemberInGroup(
+                  conversationId: widget.conversation.id,
+                  targetMemberId: memberId,
+                );
+                if (mounted && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$memberName is no longer an Admin'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to demote member: ${e.toString()}'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Dismiss Admin'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmLeaveGroup(BuildContext context) {
     showDialog(
       context: context,
@@ -342,16 +435,18 @@ class _ConversationDetailsPageState extends State<ConversationDetailsPage> {
                       ...currentConv.memberIds.map((mId) {
                         final memberProf = currentConv.memberProfiles[mId];
                         final memberIsAdmin = currentConv.adminIds.contains(mId);
-                        final canKick =
-                            isAdmin && mId != currentUserId && !memberIsAdmin;
+                        final isMe = mId == currentUserId;
                         final memberName = memberProf?.displayName ?? 'User';
 
                         return MemberTile(
                           memberId: mId,
                           profile: memberProf,
                           isAdmin: memberIsAdmin,
-                          canKick: canKick,
+                          isCurrentAdmin: isAdmin,
+                          isMe: isMe,
                           onKick: () => _confirmKickMember(context, mId, memberName),
+                          onPromote: () => _confirmPromoteMember(context, mId, memberName),
+                          onDemote: () => _confirmDemoteMember(context, mId, memberName),
                         );
                       }),
                     ],

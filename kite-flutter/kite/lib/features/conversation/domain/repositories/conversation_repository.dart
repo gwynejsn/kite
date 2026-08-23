@@ -37,6 +37,16 @@ abstract interface class ConversationRepository {
     required String targetMemberId,
   });
 
+  Future<Conversation> promoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  });
+
+  Future<Conversation> demoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  });
+
   Future<void> leaveGroup({
     required String conversationId,
   });

@@ -196,6 +196,56 @@ class ConversationDatasource {
     }
   }
 
+  Future<Conversation> promoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/conversation/$conversationId/members/promote/$targetMemberId',
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to promote member',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to promote member',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<Conversation> demoteMember({
+    required String conversationId,
+    required String targetMemberId,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/conversation/$conversationId/members/demote/$targetMemberId',
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to demote member',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to demote member',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
   Future<void> leaveGroup({
     required String conversationId,
   }) async {
