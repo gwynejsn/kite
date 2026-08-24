@@ -1,6 +1,7 @@
 package com.gwynejsn.kite.conversation.domain;
 
 import com.gwynejsn.kite.conversation.domain.enums.ConversationType;
+import com.gwynejsn.kite.shared.domain.ConversationId;
 import com.gwynejsn.kite.shared.domain.UserId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

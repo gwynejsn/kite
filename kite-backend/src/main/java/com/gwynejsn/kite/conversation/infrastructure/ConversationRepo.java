@@ -1,8 +1,7 @@
 package com.gwynejsn.kite.conversation.infrastructure;
 
-import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
 import com.gwynejsn.kite.conversation.domain.Conversation;
-import com.gwynejsn.kite.conversation.domain.ConversationId;
+import com.gwynejsn.kite.shared.domain.ConversationId;
 import com.gwynejsn.kite.shared.domain.UserId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;

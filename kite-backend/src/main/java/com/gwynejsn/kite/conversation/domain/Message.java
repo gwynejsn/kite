@@ -2,6 +2,7 @@ package com.gwynejsn.kite.conversation.domain;
 
 import com.gwynejsn.kite.conversation.domain.enums.MessageStatus;
 import com.gwynejsn.kite.conversation.domain.enums.MessageType;
+import com.gwynejsn.kite.shared.domain.ConversationId;
 import com.gwynejsn.kite.shared.domain.UserId;
 import lombok.*;
 import org.springframework.data.annotation.Id;

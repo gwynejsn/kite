@@ -57,6 +57,13 @@ mvn test
 mvn spring-boot:run
 ```
 
+#### 📖 Interactive API Documentation (Swagger UI)
+Once the backend is running, access the interactive OpenAPI documentation:
+* **Swagger UI**: [http://localhost:8080/kite/api/v1/swagger-ui.html](http://localhost:8080/kite/api/v1/swagger-ui.html)
+* **OpenAPI JSON Spec**: [http://localhost:8080/kite/api/v1/v3/api-docs](http://localhost:8080/kite/api/v1/v3/api-docs)
+
+> **Tip**: Click the **"Authorize"** button in Swagger UI to attach your JWT token (`Bearer <token>`) for testing authenticated endpoints.
+
 ---
 
 ### 2. Running the Mobile App (`kite-flutter/kite`)

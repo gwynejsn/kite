@@ -7,7 +7,7 @@ import com.gwynejsn.kite.conversation.application.dto.MemberProfileResponse;
 import com.gwynejsn.kite.conversation.application.exceptions.ConversationAlreadyExistsException;
 import com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException;
 import com.gwynejsn.kite.conversation.domain.Conversation;
-import com.gwynejsn.kite.conversation.domain.ConversationId;
+import com.gwynejsn.kite.shared.domain.ConversationId;
 import com.gwynejsn.kite.conversation.domain.enums.ConversationType;
 import com.gwynejsn.kite.conversation.infrastructure.ConversationRepo;
 import com.gwynejsn.kite.conversation.application.exceptions.ConversationNotFoundException;

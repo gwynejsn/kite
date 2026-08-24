@@ -4,7 +4,7 @@ import com.gwynejsn.kite.conversation.application.ConversationService;
 import com.gwynejsn.kite.conversation.application.MessageService;
 import com.gwynejsn.kite.conversation.application.dto.*;
 import com.gwynejsn.kite.conversation.domain.Conversation;
-import com.gwynejsn.kite.conversation.domain.ConversationId;
+import com.gwynejsn.kite.shared.domain.ConversationId;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.security.AuthenticatedUser;
 import jakarta.validation.Valid;
