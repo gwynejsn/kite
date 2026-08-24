@@ -5,6 +5,7 @@ import com.gwynejsn.kite.conversation.application.dto.MessageResponse;
 import com.gwynejsn.kite.conversation.domain.*;
 import com.gwynejsn.kite.conversation.domain.enums.MessageStatus;
 import com.gwynejsn.kite.conversation.infrastructure.MessageRepo;
+import com.gwynejsn.kite.shared.domain.ConversationId;
 import com.gwynejsn.kite.shared.domain.UserId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

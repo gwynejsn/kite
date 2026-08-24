@@ -2,7 +2,7 @@ package com.gwynejsn.kite.conversation.infrastructure;
 
 
 import com.gwynejsn.kite.conversation.application.dto.MessageResponse;
-import com.gwynejsn.kite.conversation.domain.ConversationId;
+import com.gwynejsn.kite.shared.domain.ConversationId;
 import com.gwynejsn.kite.conversation.domain.Message;
 import com.gwynejsn.kite.conversation.domain.MessageId;
 import com.gwynejsn.kite.shared.infrastructure.UserMapper;

@@ -2,7 +2,6 @@ package com.gwynejsn.kite.security.infrastructure;
 
 import com.gwynejsn.kite.security.application.UserDetailsServiceImp;
 import com.gwynejsn.kite.shared.domain.UserId;
-import com.gwynejsn.kite.shared.enums.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -11,7 +10,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -46,6 +44,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/auth/login", "/auth/logout", "/auth/sign-up", "/auth/refresh", "/error").permitAll()
+                                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
                                 .requestMatchers("/ws-connect", "/ws-connect/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/user-profile").hasAnyRole("USER", "ADMIN")
                                 .anyRequest().authenticated()
