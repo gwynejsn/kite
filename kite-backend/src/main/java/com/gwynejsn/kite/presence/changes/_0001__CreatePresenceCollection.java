@@ -16,10 +16,13 @@ public class _0001__CreatePresenceCollection {
 
     private static final String PRESENCES_COLLECTION = "user_presences";
 
+    private static final String USER_ID_INDEX = "userId_1";
+    private static final String STATUS_LAST_SEEN_AT_INDEX = "status_1_lastSeenAt_-1";
+
     @Apply
     public void apply(MongoTemplate mongoTemplate) {
         mongoTemplate.indexOps(PRESENCES_COLLECTION)
-                .createIndex(new Index().on("userId", Direction.ASC).unique());
+                .createIndex(new Index().on("userId", Direction.ASC).unique().named(USER_ID_INDEX));
 
         Document statusKeys = new Document();
         statusKeys.put("status", 1);
@@ -27,12 +30,12 @@ public class _0001__CreatePresenceCollection {
 
         mongoTemplate.indexOps(PRESENCES_COLLECTION)
                 .createIndex(new CompoundIndexDefinition(statusKeys)
-                        .named("status_1_lastSeenAt_-1"));
+                        .named(STATUS_LAST_SEEN_AT_INDEX));
     }
 
     @Rollback
     public void rollback(MongoTemplate mongoTemplate) {
-        mongoTemplate.indexOps(PRESENCES_COLLECTION).dropIndex("userId_1");
-        mongoTemplate.indexOps(PRESENCES_COLLECTION).dropIndex("status_1_lastSeenAt_-1");
+        mongoTemplate.indexOps(PRESENCES_COLLECTION).dropIndex(USER_ID_INDEX);
+        mongoTemplate.indexOps(PRESENCES_COLLECTION).dropIndex(STATUS_LAST_SEEN_AT_INDEX);
     }
 }

@@ -18,7 +18,6 @@ public class RefreshToken {
     @Id
     private RefreshTokenId id;
     private UserId userId;
-    @Indexed(unique = true)
     private String token;
     private boolean isRevoked;
     private Instant expiresAt;

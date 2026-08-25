@@ -14,17 +14,20 @@ public class _0001__CreateUserProfileCollection {
 
     private static final String PROFILES_COLLECTION = "user_profiles";
 
+    private static final String USER_ID_INDEX = "userId_1";
+    private static final String USERNAME_INDEX = "username_1";
+
     @Apply
     public void apply(MongoTemplate mongoTemplate) {
         mongoTemplate.indexOps(PROFILES_COLLECTION)
-                .createIndex(new Index().on("userId", Direction.ASC).unique());
+                .createIndex(new Index().on("userId", Direction.ASC).unique().named(USER_ID_INDEX));
         mongoTemplate.indexOps(PROFILES_COLLECTION)
-                .createIndex(new Index().on("username", Direction.ASC).unique());
+                .createIndex(new Index().on("username", Direction.ASC).unique().named(USERNAME_INDEX));
     }
 
     @Rollback
     public void rollback(MongoTemplate mongoTemplate) {
-        mongoTemplate.indexOps(PROFILES_COLLECTION).dropIndex("userId_1");
-        mongoTemplate.indexOps(PROFILES_COLLECTION).dropIndex("username_1");
+        mongoTemplate.indexOps(PROFILES_COLLECTION).dropIndex(USER_ID_INDEX);
+        mongoTemplate.indexOps(PROFILES_COLLECTION).dropIndex(USERNAME_INDEX);
     }
 }

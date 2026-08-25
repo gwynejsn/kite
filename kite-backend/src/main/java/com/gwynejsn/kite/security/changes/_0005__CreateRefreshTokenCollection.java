@@ -14,14 +14,16 @@ public class _0005__CreateRefreshTokenCollection {
 
     private static final String REFRESH_TOKEN_COLLECTION = "refresh_tokens";
 
+    private static final String TOKEN_INDEX = "token_1";
+
     @Apply
     public void apply(MongoTemplate mongoTemplate) {
         mongoTemplate.indexOps(REFRESH_TOKEN_COLLECTION)
-                .createIndex(new Index().on("token", Sort.Direction.ASC).unique());
+                .createIndex(new Index().on("token", Sort.Direction.ASC).unique().named(TOKEN_INDEX));
     }
 
     @Rollback
     public void rollback(MongoTemplate mongoTemplate) {
-        mongoTemplate.indexOps(REFRESH_TOKEN_COLLECTION).dropIndex("token");
+        mongoTemplate.indexOps(REFRESH_TOKEN_COLLECTION).dropIndex(TOKEN_INDEX);
     }
 }

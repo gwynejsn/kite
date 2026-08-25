@@ -14,14 +14,16 @@ public class _0001__CreateUserCollection {
 
     private static final String USERS_COLLECTION = "users";
 
+    private static final String EMAIL_INDEX = "email_1";
+
     @Apply
     public void apply(MongoTemplate mongoTemplate) {
         mongoTemplate.indexOps(USERS_COLLECTION)
-                .createIndex(new Index().on("email", Direction.ASC).unique());
+                .createIndex(new Index().on("email", Direction.ASC).unique().named(EMAIL_INDEX));
     }
 
     @Rollback
     public void rollback(MongoTemplate mongoTemplate) {
-        mongoTemplate.indexOps(USERS_COLLECTION).dropIndex("email_1");
+        mongoTemplate.indexOps(USERS_COLLECTION).dropIndex(EMAIL_INDEX);
     }
 }
