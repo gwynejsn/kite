@@ -1,0 +1,989 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Spring modulith with E2EE flutter chat app">
+      
+      
+        <meta name="author" content="Gwyne Justin Deterala">
+      
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../api/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Security & E2EE Model - Kite Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="amber" data-md-color-accent="light-green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#end-to-end-encryption-e2ee-security-specification" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Kite Documentation" class="md-header__button md-logo" aria-label="Kite Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kite Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Security & E2EE Model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="amber" data-md-color-accent="light-green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="light-green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gwynejsn/kite" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Kite Documentation" class="md-nav__button md-logo" aria-label="Kite Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Kite Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gwynejsn/kite" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security & E2EE Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security & E2EE Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-user-onboarding-key-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. User Onboarding &amp; Key Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-direct-1-on-1-chat-encryption-decryption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Direct 1-on-1 Chat Encryption &amp; Decryption
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Direct 1-on-1 Chat Encryption &amp; Decryption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#encryption-steps-user-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Encryption Steps (User A)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decryption-steps-user-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decryption Steps (User B)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-group-chat-encryption-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Group Chat Encryption Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Group Chat Encryption Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initial-naive-approach-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initial Naive Approach &amp; Limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implemented-group-key-distribution-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implemented Group Key Distribution Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implemented Group Key Distribution Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-a-group-creation-initial-key-distribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase A: Group Creation &amp; Initial Key Distribution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-b-group-message-transmission-decryption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase B: Group Message Transmission &amp; Decryption
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-c-kicking-members-key-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase C: Kicking Members &amp; Key Rotation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-media-upload-encryption-images-videos-files-audio-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Media Upload Encryption (Images, Videos, Files, Audio Notes)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Media Upload Encryption (Images, Videos, Files, Audio Notes)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upload-transmission-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upload &amp; Transmission Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-client-key-management-hardware-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Client Key Management &amp; Hardware Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST & STOMP API Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-user-onboarding-key-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. User Onboarding &amp; Key Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-direct-1-on-1-chat-encryption-decryption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Direct 1-on-1 Chat Encryption &amp; Decryption
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Direct 1-on-1 Chat Encryption &amp; Decryption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#encryption-steps-user-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Encryption Steps (User A)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decryption-steps-user-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decryption Steps (User B)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-group-chat-encryption-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Group Chat Encryption Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Group Chat Encryption Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initial-naive-approach-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initial Naive Approach &amp; Limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implemented-group-key-distribution-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implemented Group Key Distribution Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implemented Group Key Distribution Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-a-group-creation-initial-key-distribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase A: Group Creation &amp; Initial Key Distribution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-b-group-message-transmission-decryption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase B: Group Message Transmission &amp; Decryption
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-c-kicking-members-key-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase C: Kicking Members &amp; Key Rotation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-media-upload-encryption-images-videos-files-audio-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Media Upload Encryption (Images, Videos, Files, Audio Notes)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Media Upload Encryption (Images, Videos, Files, Audio Notes)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upload-transmission-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upload &amp; Transmission Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-client-key-management-hardware-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Client Key Management &amp; Hardware Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="end-to-end-encryption-e2ee-security-specification">End-to-End Encryption (E2EE) &amp; Security Specification</h1>
+<p>Kite operates on a strict <strong>zero-knowledge trust model</strong>. The application architecture ensures that the central backend server acts strictly as an untrusted message broker and media host. All encryption and decryption operations take place client-side on user devices. The server never possesses private keys or unencrypted message payloads.</p>
+<hr />
+<h2 id="1-user-onboarding-key-generation">1. User Onboarding &amp; Key Generation</h2>
+<p>Whenever a user signs up for an account (<code>POST /auth/sign-up</code>):</p>
+<ol>
+<li><strong>Keypair Generation</strong>: The client application locally generates an asymmetric key pair using <strong>X25519 Elliptic-Curve Diffie-Hellman (ECDH)</strong>.</li>
+<li><strong>Local Private Key Storage</strong>: The private key is saved locally on the user's mobile device inside hardware-backed secure storage (<code>Flutter Secure Storage</code> using iOS Keychain and Android KeyStore). The private key <strong>never leaves the client device</strong>.</li>
+<li><strong>Public Key Directory</strong>: The public key is uploaded to the backend server during registration and stored in the user profile directory. Other users retrieve this public key to establish encrypted communication channels.</li>
+</ol>
+<hr />
+<h2 id="2-direct-1-on-1-chat-encryption-decryption">2. Direct 1-on-1 Chat Encryption &amp; Decryption</h2>
+<p>When <strong>User A</strong> wants to send a direct message to <strong>User B</strong>:</p>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    actor Alice as User A (Sender)
+    participant Server as Backend Server (Untrusted Relay)
+    actor Bob as User B (Recipient)
+
+    Note over Alice,Bob: 1-on-1 Direct Message Flow
+    Alice-&gt;&gt;Alice: 1. Encrypt message payload with AES-256 GCM using Secret Key
+    Alice-&gt;&gt;Alice: 2. Encrypt Secret Key via X25519 (User A Private Key + User B Public Key)
+    Alice-&gt;&gt;Server: 3. Send Encrypted Envelope &amp; Payload (POST /conversation/message)
+    Server-&gt;&gt;Bob: 4. Push Encrypted Message via STOMP WebSocket
+    Bob-&gt;&gt;Bob: 5. Decrypt Secret Key via X25519 (User B Private Key + User A Public Key)
+    Bob-&gt;&gt;Bob: 6. Decrypt Message Payload using Secret Key (AES-256 GCM)</code></pre>
+<h3 id="encryption-steps-user-a">Encryption Steps (User A)</h3>
+<ol>
+<li><strong>Symmetric Payload Cipher</strong>: User A encrypts the plaintext message using <strong>AES-256 GCM</strong> with a randomly generated secret key.</li>
+<li><strong>Asymmetric Key Envelope</strong>: User A derives a shared secret using <strong>User A's private key</strong> and <strong>User B's public key</strong> via X25519 ECDH. User A encrypts the secret key using this shared secret.</li>
+<li><strong>Transmission</strong>: User A sends the encrypted secret key envelope, AES-GCM ciphertext, nonce, and authentication tag to the server.</li>
+</ol>
+<h3 id="decryption-steps-user-b">Decryption Steps (User B)</h3>
+<ol>
+<li><strong>Key Envelope Decryption</strong>: User B uses <strong>User B's private key</strong> and <strong>User A's public key</strong> via X25519 to derive the exact same shared secret. User B decrypts the envelope to retrieve the secret key.</li>
+<li><strong>Payload Decryption</strong>: User B uses the secret key to decrypt the AES-256 GCM ciphertext back into original plaintext.</li>
+</ol>
+<hr />
+<h2 id="3-group-chat-encryption-architecture">3. Group Chat Encryption Architecture</h2>
+<h3 id="initial-naive-approach-limitations">Initial Naive Approach &amp; Limitations</h3>
+<p>In the initial design consideration, whenever User A sent a group message, User A would encrypt the message $N$ separate times for each of the $N$ members of the group chat.</p>
+<p>This approach had severe engineering limitations:
+1. <strong>Computational &amp; Bandwidth Overhead $O(N)$</strong>: Encrypting and transmitting payloads $N$ times scales poorly as group membership grows.
+2. <strong>Historical Access Limitation for New Members</strong>: When a new user is added to an existing group chat, that new user cannot decrypt past messages because previous messages were encrypted strictly for members who belonged to the group at the time of sending.</p>
+<h3 id="implemented-group-key-distribution-architecture">Implemented Group Key Distribution Architecture</h3>
+<p>To solve these limitations cleanly, Kite uses a <strong>Group Chat (GC) Key Architecture</strong> divided into three distinct operations:</p>
+<h4 id="phase-a-group-creation-initial-key-distribution">Phase A: Group Creation &amp; Initial Key Distribution</h4>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    actor Admin as Group Admin
+    participant Server as Backend Server
+
+    Admin-&gt;&gt;Admin: 1. Generate random Group Chat Key (GC Key)
+    Admin-&gt;&gt;Admin: 2. Encrypt GC Key for each member (X25519)
+    Admin-&gt;&gt;Server: 3. Store groupKeyMap (POST /conversation/group)</code></pre>
+<h4 id="phase-b-group-message-transmission-decryption">Phase B: Group Message Transmission &amp; Decryption</h4>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    actor Alice as Sender (User A)
+    participant Server as Backend Server
+    actor Bob as Recipient (User B)
+
+    Alice-&gt;&gt;Alice: 1. Decrypt GC Key using Private Key (X25519)
+    Alice-&gt;&gt;Alice: 2. Encrypt Message ONCE with AES-256 GCM using GC Key
+    Alice-&gt;&gt;Server: 3. Send Encrypted Message Payload
+    Server-&gt;&gt;Bob: 4. Push Message via WebSocket (STOMP)
+    Bob-&gt;&gt;Bob: 5. Decrypt GC Key &amp; Decrypt Message (AES-256 GCM)</code></pre>
+<h4 id="phase-c-kicking-members-key-rotation">Phase C: Kicking Members &amp; Key Rotation</h4>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    actor Admin as Group Admin
+    participant Server as Backend Server
+
+    Admin-&gt;&gt;Admin: 1. Kick Member from Group
+    Admin-&gt;&gt;Admin: 2. Generate NEW GC Key (Key Rotation)
+    Admin-&gt;&gt;Admin: 3. Encrypt NEW GC Key for remaining members (X25519)
+    Admin-&gt;&gt;Server: 4. Update groupKeyMap (Revokes kicked member access)</code></pre>
+<ol>
+<li><strong>Group Key Generation</strong>: When a group chat is created, the creator generates a single random <strong>Group Chat (GC) Key</strong>.</li>
+<li><strong>Key Map Distribution</strong>: The creator encrypts the GC Key for each group member using X25519 (Creator's private key + Member's public key). This mapping (<code>groupKeyMap</code>) is stored in the conversation document on the server.</li>
+<li><strong>Efficient Group Messaging O(1)</strong>: When any member (e.g., User C) sends a message to the group, User C decrypts the GC Key using their own private key, and encrypts the message <strong>once</strong> using AES-256 GCM with that GC Key.</li>
+<li><strong>Adding Members &amp; History Access</strong>: When an admin adds a new member to the group chat, the admin encrypts the existing GC Key using the new member's public key. This allows the newly joined member to decrypt historical group messages.</li>
+<li><strong>Kicking Members &amp; Key Rotation</strong>: When an admin kicks a member from the group chat, a <strong>GC Key Rotation</strong> is performed: a new GC Key is generated and encrypted for all remaining members. This revokes the kicked member's ability to decrypt future messages.</li>
+</ol>
+<hr />
+<h2 id="4-media-upload-encryption-images-videos-files-audio-notes">4. Media Upload Encryption (Images, Videos, Files, Audio Notes)</h2>
+<p>Media attachments follow the exact same 2-layer encryption model:</p>
+<h3 id="upload-transmission-flow">Upload &amp; Transmission Flow</h3>
+<ol>
+<li><strong>Client-Side Binary Encryption</strong>: The client encrypts the raw uncompressed media bytes (photo, video, document, or audio recording) locally using <strong>AES-256 GCM</strong> with a single-use symmetric key.</li>
+<li><strong>Multipart Upload</strong>: The client uploads the opaque binary ciphertext stream to <code>POST /media/upload</code> via a multipart <code>FormData</code> request.</li>
+<li><strong>Ciphertext URL</strong>: The server stores the binary ciphertext in MongoDB GridFS and returns a public download link (<code>http://localhost:8080/kite/api/v1/media/download/{filename}</code>).</li>
+<li><strong>Encrypted Message Payload</strong>: The client places the download link inside the message payload. Crucial decryption attributes—including the single-use AES key, <code>nonce</code>, and authentication tag (<code>mac</code>)—are encrypted inside the X25519 signaling envelope.</li>
+</ol>
+<p>Even if an unauthorized third party obtains the media download link, they receive only raw opaque ciphertext bytes that cannot be decrypted without the secret key sealed inside the envelope.</p>
+<hr />
+<h2 id="5-client-key-management-hardware-security">5. Client Key Management &amp; Hardware Security</h2>
+<ul>
+<li><strong>Private Key Isolation</strong>: User private keys never leave the client device and are never transmitted over the network.</li>
+<li><strong>Hardware-Backed Storage</strong>: Keys are stored using <code>Flutter Secure Storage</code>:</li>
+<li><strong>iOS</strong>: Encrypted inside the iOS Keychain with <code>kSecAttrAccessibleAfterFirstUnlock</code>.</li>
+<li><strong>Android</strong>: Encrypted using the hardware-backed Android KeyStore system.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+      
+    
+  </body>
+</html>

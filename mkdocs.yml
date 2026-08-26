@@ -1,0 +1,53 @@
+site_name: Kite Documentation
+site_description: Spring modulith with E2EE flutter chat app
+site_author: Gwyne Justin Deterala
+repo_url: https://github.com/gwynejsn/kite
+repo_name: GitHub
+
+theme:
+  name: material
+  palette:
+    # light mode
+    - scheme: default
+      primary: amber
+      accent: light-green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # dark mode
+    - scheme: slate
+      primary: amber
+      accent: light-green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: index.md
+  - System Architecture: architecture.md
+  - Security & E2EE Model: security.md
+  - REST & STOMP API Spec: api.md
+  - Setup & Installation: setup.md
+
+extra_css:
+  - assets/custom.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
