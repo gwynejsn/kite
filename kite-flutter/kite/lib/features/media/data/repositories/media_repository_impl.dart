@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kite/features/media/data/datasources/media_remote_datasource.dart';
@@ -53,6 +54,46 @@ class MediaRepositoryImpl implements MediaRepository {
       );
     } catch (e) {
       debugPrint('Error picking video: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<MediaPickResult?> pickFile() async {
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.any,
+      );
+      if (file == null) return null;
+
+      final bytes = await file.readAsBytes();
+      return MediaPickResult(
+        rawBytes: bytes,
+        fileName: file.name,
+        mediaType: 'FILE',
+      );
+    } catch (e) {
+      debugPrint('Error picking file: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<MediaPickResult?> pickAudio() async {
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.audio,
+      );
+      if (file == null) return null;
+
+      final bytes = await file.readAsBytes();
+      return MediaPickResult(
+        rawBytes: bytes,
+        fileName: file.name,
+        mediaType: 'AUDIO',
+      );
+    } catch (e) {
+      debugPrint('Error picking audio: $e');
       return null;
     }
   }

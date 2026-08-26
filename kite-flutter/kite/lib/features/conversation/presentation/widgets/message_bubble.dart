@@ -3,6 +3,8 @@ import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/domain/conversation_type.dart';
 import 'package:kite/features/conversation/domain/message_response.dart';
 import 'package:kite/features/media/domain/models/encrypted_media_payload.dart';
+import 'package:kite/features/media/presentation/widgets/encrypted_audio_view.dart';
+import 'package:kite/features/media/presentation/widgets/encrypted_file_view.dart';
 import 'package:kite/features/media/presentation/widgets/encrypted_image_view.dart';
 import 'package:kite/features/media/presentation/widgets/encrypted_video_view.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
@@ -148,24 +150,36 @@ class MessageBubble extends StatelessWidget {
                       if (mediaPayload != null &&
                           message.mediaUrl != null &&
                           message.mediaUrl!.isNotEmpty) {
-                        final isVideo = mediaPayload.mediaType.toUpperCase() == 'VIDEO';
+                        final type = mediaPayload.mediaType.toUpperCase();
                         return Column(
                           crossAxisAlignment: isMe
                               ? CrossAxisAlignment.end
                               : CrossAxisAlignment.start,
                           children: [
-                            if (!isVideo)
+                            if (type == 'IMAGE')
                               EncryptedImageView(
                                 mediaUrl: message.mediaUrl!,
                                 payload: mediaPayload,
                                 width: 220,
                                 height: 220,
                               )
-                            else
+                            else if (type == 'VIDEO')
                               EncryptedVideoView(
                                 mediaUrl: message.mediaUrl!,
                                 payload: mediaPayload,
                                 width: 240,
+                              )
+                            else if (type == 'AUDIO')
+                              EncryptedAudioView(
+                                mediaUrl: message.mediaUrl!,
+                                payload: mediaPayload,
+                                isMe: isMe,
+                              )
+                            else
+                              EncryptedFileView(
+                                mediaUrl: message.mediaUrl!,
+                                payload: mediaPayload,
+                                isMe: isMe,
                               ),
                             if (mediaPayload.caption != null &&
                                 mediaPayload.caption!.isNotEmpty) ...[

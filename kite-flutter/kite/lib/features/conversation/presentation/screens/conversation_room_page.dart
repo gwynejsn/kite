@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kite/features/conversation/domain/conversation.dart';
@@ -140,6 +141,93 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
       rawBytes: pickResult.rawBytes,
       fileName: pickResult.fileName,
       caption: caption.isNotEmpty ? caption : null,
+      recipientPublicKey: recipientPublicKey,
+      memberPublicKeys: activeConv.memberPublicKeys,
+      groupKeyBase64: groupKeyBase64,
+    );
+  }
+
+  Future<void> _handlePickDocumentOrAudio(
+    String? currentUserId,
+    Conversation activeConv, {
+    required bool isAudio,
+  }) async {
+    if (currentUserId == null) return;
+
+    final mediaRepository = sl<MediaRepository>();
+    final pickResult = isAudio
+        ? await mediaRepository.pickAudio()
+        : await mediaRepository.pickFile();
+
+    if (pickResult == null) return;
+
+    final caption = _textController.text.trim();
+    if (caption.isNotEmpty) {
+      _textController.clear();
+    }
+
+    String? recipientPublicKey;
+    final otherMemberId = activeConv.memberIds.firstWhere(
+      (id) => id != currentUserId,
+      orElse: () => '',
+    );
+    if (otherMemberId.isNotEmpty) {
+      recipientPublicKey = activeConv.memberPublicKeys[otherMemberId];
+    }
+
+    String? groupKeyBase64;
+    if (activeConv.type == ConversationType.group) {
+      groupKeyBase64 = await activeConv.getGroupKey(
+        sl<EncryptionService>(),
+        currentUserId: currentUserId,
+      );
+    }
+
+    await _controller.sendMediaMessage(
+      conversationId: activeConv.id,
+      currentUserId: currentUserId,
+      mediaType: pickResult.mediaType,
+      rawBytes: pickResult.rawBytes,
+      fileName: pickResult.fileName,
+      caption: caption.isNotEmpty ? caption : null,
+      recipientPublicKey: recipientPublicKey,
+      memberPublicKeys: activeConv.memberPublicKeys,
+      groupKeyBase64: groupKeyBase64,
+    );
+  }
+
+  Future<void> _handleSendVoiceNote(
+    String? currentUserId,
+    Conversation activeConv,
+    Uint8List audioBytes,
+    String fileName,
+  ) async {
+    if (currentUserId == null) return;
+
+    String? recipientPublicKey;
+    final otherMemberId = activeConv.memberIds.firstWhere(
+      (id) => id != currentUserId,
+      orElse: () => '',
+    );
+    if (otherMemberId.isNotEmpty) {
+      recipientPublicKey = activeConv.memberPublicKeys[otherMemberId];
+    }
+
+    String? groupKeyBase64;
+    if (activeConv.type == ConversationType.group) {
+      groupKeyBase64 = await activeConv.getGroupKey(
+        sl<EncryptionService>(),
+        currentUserId: currentUserId,
+      );
+    }
+
+    await _controller.sendMediaMessage(
+      conversationId: activeConv.id,
+      currentUserId: currentUserId,
+      mediaType: 'AUDIO',
+      rawBytes: audioBytes,
+      fileName: fileName,
+      caption: null,
       recipientPublicKey: recipientPublicKey,
       memberPublicKeys: activeConv.memberPublicKeys,
       groupKeyBase64: groupKeyBase64,
@@ -421,6 +509,23 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                       activeConv,
                       isVideo: true,
                       source: source,
+                    ),
+                    onPickFile: () => _handlePickDocumentOrAudio(
+                      currentUserId,
+                      activeConv,
+                      isAudio: false,
+                    ),
+                    onPickAudio: () => _handlePickDocumentOrAudio(
+                      currentUserId,
+                      activeConv,
+                      isAudio: true,
+                    ),
+                    onSendVoiceNote: (audioBytes, fileName) =>
+                        _handleSendVoiceNote(
+                      currentUserId,
+                      activeConv,
+                      audioBytes,
+                      fileName,
                     ),
                   ),
                 ],

@@ -45,6 +45,10 @@ dependencies:
   stomp_dart_client: ^3.0.1
   video_player: ^2.9.2
   image_picker: ^1.1.2
+  file_picker: ^12.1.0
+  record: ^7.1.1
+  path_provider: ^2.1.5
+  audioplayers: ^6.1.0
 
 dev_dependencies:
   flutter_test:

@@ -27,6 +27,8 @@ class UploadedMediaResult {
 abstract interface class MediaRepository {
   Future<MediaPickResult?> pickImage(ImageSource source);
   Future<MediaPickResult?> pickVideo(ImageSource source);
+  Future<MediaPickResult?> pickFile();
+  Future<MediaPickResult?> pickAudio();
 
   Future<UploadedMediaResult> encryptAndUploadMedia({
     required Uint8List rawBytes,

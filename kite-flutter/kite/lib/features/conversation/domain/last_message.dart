@@ -71,9 +71,17 @@ class LastMessage {
       if (decrypted.isNotEmpty) {
         final mediaPayload = EncryptedMediaPayload.tryDecode(decrypted);
         if (mediaPayload != null) {
-          final prefix = mediaPayload.mediaType.toUpperCase() == 'VIDEO'
-              ? 'Video'
-              : 'Photo';
+          final type = mediaPayload.mediaType.toUpperCase();
+          final String prefix;
+          if (type == 'VIDEO') {
+            prefix = 'Video';
+          } else if (type == 'AUDIO') {
+            prefix = 'Audio';
+          } else if (type == 'FILE') {
+            prefix = 'File';
+          } else {
+            prefix = 'Photo';
+          }
           if (mediaPayload.caption != null &&
               mediaPayload.caption!.isNotEmpty) {
             return '$prefix: ${mediaPayload.caption}';
