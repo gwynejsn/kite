@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/auth/login", "/auth/logout", "/auth/sign-up", "/auth/refresh", "/error").permitAll()
+                                .requestMatchers("/auth/login", "/auth/logout", "/auth/sign-up", "/auth/refresh", "/error", "/media/download/**", "/media/upload").permitAll()
                                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
                                 .requestMatchers("/ws-connect", "/ws-connect/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/user-profile").hasAnyRole("USER", "ADMIN")

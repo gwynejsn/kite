@@ -43,4 +43,10 @@ abstract interface class MediaRepository {
     required String mediaUrl,
     required EncryptedMediaPayload payload,
   });
+
+  Future<String> uploadUnencryptedMedia({
+    required Uint8List rawBytes,
+    required String fileName,
+    String? uploaderId,
+  });
 }

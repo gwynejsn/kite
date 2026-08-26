@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:kite/features/auth/data/dto/register_request.dart';
 
 class RegisterState {
@@ -6,6 +7,8 @@ class RegisterState {
   final bool isSuccess;
   final int stepIndex;
   final RegisterRequest request;
+  final Uint8List? profileImageBytes;
+  final String? profileImageName;
 
   const RegisterState({
     this.isLoading = false,
@@ -13,6 +16,8 @@ class RegisterState {
     this.isSuccess = false,
     this.stepIndex = 0,
     this.request = const RegisterRequest(),
+    this.profileImageBytes,
+    this.profileImageName,
   });
 
   RegisterState copyWith({
@@ -21,6 +26,8 @@ class RegisterState {
     bool? isSuccess,
     int? stepIndex,
     RegisterRequest? request,
+    Uint8List? profileImageBytes,
+    String? profileImageName,
   }) {
     return RegisterState(
       isLoading: isLoading ?? this.isLoading,
@@ -28,6 +35,8 @@ class RegisterState {
       isSuccess: isSuccess ?? this.isSuccess,
       stepIndex: stepIndex ?? this.stepIndex,
       request: request ?? this.request,
+      profileImageBytes: profileImageBytes ?? this.profileImageBytes,
+      profileImageName: profileImageName ?? this.profileImageName,
     );
   }
 }

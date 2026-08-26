@@ -62,6 +62,57 @@ class MediaRemoteDatasource {
     }
   }
 
+  /// Uploads unencrypted raw bytes (e.g. profile photo) to /media/upload endpoint and returns the download path URL
+  Future<String> uploadUnencryptedMedia({
+    required Uint8List rawBytes,
+    required String fileName,
+    String? uploaderId,
+  }) async {
+    try {
+      final uploadRequestJson = jsonEncode({
+        'fileName': fileName,
+        'mediaType': 'IMAGE',
+        'uploaderId': uploaderId ?? 'SYSTEM',
+        'conversationId': 'PROFILE',
+      });
+
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          rawBytes,
+          filename: fileName,
+          contentType: DioMediaType('image', 'jpeg'),
+        ),
+        'uploadRequest': MultipartFile.fromString(
+          uploadRequestJson,
+          contentType: DioMediaType('application', 'json'),
+        ),
+      });
+
+      final response = await dio.post(
+        '/media/upload',
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        final path = response.data['path'] as String?;
+        if (path != null && path.isNotEmpty) {
+          return path;
+        }
+      }
+      throw AuthenticationException(
+        'Failed to upload profile image (${response.statusCode})',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      debugPrint('Profile image upload error: $e');
+      final message = _extractErrorMessage(e, fallback: 'Failed to upload profile image');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
   /// Downloads binary encrypted media from mediaUrl (/media/download/{filename} or full path)
   Future<Uint8List> downloadEncryptedMedia(String mediaUrl) async {
     try {

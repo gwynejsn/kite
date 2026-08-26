@@ -156,4 +156,17 @@ class MediaRepositoryImpl implements MediaRepository {
     _decryptedCache[mediaUrl] = decryptedBytes;
     return decryptedBytes;
   }
+
+  @override
+  Future<String> uploadUnencryptedMedia({
+    required Uint8List rawBytes,
+    required String fileName,
+    String? uploaderId,
+  }) async {
+    return mediaRemoteDatasource.uploadUnencryptedMedia(
+      rawBytes: rawBytes,
+      fileName: fileName,
+      uploaderId: uploaderId,
+    );
+  }
 }
