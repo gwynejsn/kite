@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/domain/conversation_type.dart';
+import 'package:kite/features/media/domain/repositories/media_repository.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_state.dart';
@@ -92,6 +94,56 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
         groupKeyBase64: groupKeyBase64,
       );
     }
+  }
+
+  Future<void> _handlePickMedia(
+    String? currentUserId,
+    Conversation activeConv, {
+    required bool isVideo,
+    required ImageSource source,
+  }) async {
+    if (currentUserId == null) return;
+
+    final mediaRepository = sl<MediaRepository>();
+    final pickResult = isVideo
+        ? await mediaRepository.pickVideo(source)
+        : await mediaRepository.pickImage(source);
+
+    if (pickResult == null) return;
+
+    final caption = _textController.text.trim();
+    if (caption.isNotEmpty) {
+      _textController.clear();
+    }
+
+    String? recipientPublicKey;
+    final otherMemberId = activeConv.memberIds.firstWhere(
+      (id) => id != currentUserId,
+      orElse: () => '',
+    );
+    if (otherMemberId.isNotEmpty) {
+      recipientPublicKey = activeConv.memberPublicKeys[otherMemberId];
+    }
+
+    String? groupKeyBase64;
+    if (activeConv.type == ConversationType.group) {
+      groupKeyBase64 = await activeConv.getGroupKey(
+        sl<EncryptionService>(),
+        currentUserId: currentUserId,
+      );
+    }
+
+    await _controller.sendMediaMessage(
+      conversationId: activeConv.id,
+      currentUserId: currentUserId,
+      mediaType: pickResult.mediaType,
+      rawBytes: pickResult.rawBytes,
+      fileName: pickResult.fileName,
+      caption: caption.isNotEmpty ? caption : null,
+      recipientPublicKey: recipientPublicKey,
+      memberPublicKeys: activeConv.memberPublicKeys,
+      groupKeyBase64: groupKeyBase64,
+    );
   }
 
   void _openConversationDetailsPage(
@@ -358,6 +410,18 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                   MessageInputFooter(
                     textController: _textController,
                     onSend: () => _handleSendMessage(currentUserId, activeConv),
+                    onPickImage: (source) => _handlePickMedia(
+                      currentUserId,
+                      activeConv,
+                      isVideo: false,
+                      source: source,
+                    ),
+                    onPickVideo: (source) => _handlePickMedia(
+                      currentUserId,
+                      activeConv,
+                      isVideo: true,
+                      source: source,
+                    ),
                   ),
                 ],
               ),

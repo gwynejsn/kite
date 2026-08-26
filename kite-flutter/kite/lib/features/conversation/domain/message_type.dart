@@ -1,9 +1,6 @@
 enum MessageType {
   text,
-  image,
-  video,
-  file,
-  audio,
+  media,
   system;
 
   static MessageType fromString(String value) {

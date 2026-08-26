@@ -44,6 +44,7 @@ dependencies:
   web_socket_channel: ^3.0.3
   stomp_dart_client: ^3.0.1
   video_player: ^2.9.2
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

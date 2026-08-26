@@ -277,6 +277,46 @@ class SimpleE2eeService implements EncryptionService {
     return utf8.decode(clearBytes);
   }
 
+  @override
+  Future<MediaEncryptionResult> encryptMediaBytes(Uint8List bytes) async {
+    final secretKey = await _cipherAlgorithm.newSecretKey();
+    final secretKeyBytes = await secretKey.extractBytes();
+    final secretBox = await _cipherAlgorithm.encrypt(
+      bytes,
+      secretKey: secretKey,
+    );
+
+    return MediaEncryptionResult(
+      encryptedBytes: Uint8List.fromList(secretBox.cipherText),
+      keyBase64: base64Encode(secretKeyBytes),
+      nonceBase64: base64Encode(secretBox.nonce),
+      macBase64: base64Encode(secretBox.mac.bytes),
+    );
+  }
+
+  @override
+  Future<Uint8List> decryptMediaBytes({
+    required Uint8List encryptedBytes,
+    required String keyBase64,
+    required String nonceBase64,
+    required String macBase64,
+  }) async {
+    final secretKey = SecretKey(base64Decode(keyBase64));
+    final secretBox = SecretBox(
+      encryptedBytes,
+      nonce: base64Decode(nonceBase64),
+      mac: Mac(base64Decode(macBase64)),
+    );
+
+    final clearBytes = await _cipherAlgorithm.decrypt(
+      secretBox,
+      secretKey: secretKey,
+    );
+
+    return Uint8List.fromList(clearBytes);
+  }
+
+
   Future<SimpleKeyPair> _loadLocalKeyPair() async {
     String? privateKeyBase64 = await _getPrivateKey();
     if (privateKeyBase64 == null || privateKeyBase64.isEmpty) {

@@ -57,10 +57,12 @@ class ConversationTile extends StatelessWidget {
 
     final isOnline = isGroup
         ? presenceProvider.isAnyMemberOnline(
-            conversation.memberIds, currentUserId)
+            conversation.memberIds,
+            currentUserId,
+          )
         : (otherMemberId != null &&
-            otherMemberId.isNotEmpty &&
-            presenceProvider.isUserOnline(otherMemberId));
+              otherMemberId.isNotEmpty &&
+              presenceProvider.isUserOnline(otherMemberId));
 
     final title = conversation.name ?? 'Conversation';
     final photoUrl = conversation.conversationPhoto;
@@ -69,7 +71,8 @@ class ConversationTile extends StatelessWidget {
         ? _formatTime(conversation.lastMessage!.timestamp)
         : '';
 
-    final isSentByMe = currentUserId != null &&
+    final isSentByMe =
+        currentUserId != null &&
         conversation.lastMessage != null &&
         conversation.lastMessage!.senderId == currentUserId;
 
@@ -89,9 +92,7 @@ class ConversationTile extends StatelessWidget {
                       : null,
                   child: (photoUrl == null || photoUrl.isEmpty)
                       ? Icon(
-                          isGroup
-                              ? Icons.group_rounded
-                              : Icons.person_rounded,
+                          isGroup ? Icons.group_rounded : Icons.person_rounded,
                           size: 28,
                           color: theme.colorScheme.onPrimaryContainer,
                         )
@@ -154,14 +155,12 @@ class ConversationTile extends StatelessWidget {
                             future: () async {
                               String? groupKeyBase64;
                               if (conversation.type == ConversationType.group) {
-                                groupKeyBase64 =
-                                    await conversation.getGroupKey(
+                                groupKeyBase64 = await conversation.getGroupKey(
                                   sl<EncryptionService>(),
                                   currentUserId: currentUserId,
                                 );
                               }
-                              return conversation.lastMessage!
-                                  .getDecryptedContent(
+                              return conversation.lastMessage!.getDecryptedContent(
                                 sl<EncryptionService>(),
                                 currentUserId: currentUserId,
                                 groupKeyBase64: groupKeyBase64,
@@ -169,8 +168,7 @@ class ConversationTile extends StatelessWidget {
                             }(),
                             builder: (context, snapshot) {
                               final text = snapshot.data ??
-                                  (snapshot.connectionState ==
-                                          ConnectionState.waiting
+                                  (snapshot.connectionState == ConnectionState.waiting
                                       ? 'Loading message...'
                                       : 'Encrypted Message');
                               return Row(
@@ -190,8 +188,7 @@ class ConversationTile extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
+                                        color: theme.colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ),
