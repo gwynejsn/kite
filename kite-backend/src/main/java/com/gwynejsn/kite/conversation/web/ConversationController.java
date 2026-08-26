@@ -52,22 +52,10 @@ public class ConversationController {
         // broadcast message to active room subscribers
         messagingTemplate.convertAndSend("/topic/conversation." + messageRequest.conversationId(), response);
 
-        // broadcast updated conversation list
-        broadcastConversationUpdate(new ConversationId(messageRequest.conversationId()), authenticatedUser.getUserId());
+        // broadcast updated conversation list to members
+        conversationService.broadcastConversationUpdate(new ConversationId(messageRequest.conversationId()));
 
         return ResponseEntity.ok(response);
-    }
-
-    private void broadcastConversationUpdate(ConversationId conversationId, UserId currentUserId) {
-        try {
-            Conversation conversation = conversationService.validateMember(conversationId, currentUserId);
-            for (UserId memberId : conversation.getMemberIds()) {
-                ConversationResponse convResponse = conversationService.getConversationForUser(conversationId, memberId);
-                messagingTemplate.convertAndSend("/topic/user." + memberId.id().toString() + ".conversations", convResponse);
-            }
-        } catch (Exception e) {
-            log.error("Failed to broadcast conversation update for {}", conversationId, e);
-        }
     }
 
     private void broadcastGroupConversationUpdate(ConversationResponse response) {

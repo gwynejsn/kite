@@ -14,6 +14,9 @@ public class _0001__CreateSocialCollection {
 
     private static final String RELATIONS_COLLECTION = "user_relations";
 
+    private static final String REQUESTER_ADDRESSEE_INDEX = "requesterId_1_addresseeId_1";
+    private static final String ADDRESSEE_STATUS_INDEX = "addresseeId_1_status_1";
+
     @Apply
     public void apply(MongoTemplate mongoTemplate) {
         Document compoundKeys = new Document();
@@ -23,7 +26,7 @@ public class _0001__CreateSocialCollection {
         mongoTemplate.indexOps(RELATIONS_COLLECTION)
                 .createIndex(new CompoundIndexDefinition(compoundKeys)
                         .unique()
-                        .named("requesterId_1_addresseeId_1"));
+                        .named(REQUESTER_ADDRESSEE_INDEX));
 
         Document statusKeys = new Document();
         statusKeys.put("addresseeId", 1);
@@ -31,12 +34,12 @@ public class _0001__CreateSocialCollection {
 
         mongoTemplate.indexOps(RELATIONS_COLLECTION)
                 .createIndex(new CompoundIndexDefinition(statusKeys)
-                        .named("addresseeId_1_status_1"));
+                        .named(ADDRESSEE_STATUS_INDEX));
     }
 
     @Rollback
     public void rollback(MongoTemplate mongoTemplate) {
-        mongoTemplate.indexOps(RELATIONS_COLLECTION).dropIndex("requesterId_1_addresseeId_1");
-        mongoTemplate.indexOps(RELATIONS_COLLECTION).dropIndex("addresseeId_1_status_1");
+        mongoTemplate.indexOps(RELATIONS_COLLECTION).dropIndex(REQUESTER_ADDRESSEE_INDEX);
+        mongoTemplate.indexOps(RELATIONS_COLLECTION).dropIndex(ADDRESSEE_STATUS_INDEX);
     }
 }

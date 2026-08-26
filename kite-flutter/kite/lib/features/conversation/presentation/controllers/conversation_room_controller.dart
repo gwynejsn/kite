@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:kite/features/conversation/domain/encrypted_payload.dart';
 import 'package:kite/features/conversation/domain/message_response.dart';
@@ -5,6 +6,8 @@ import 'package:kite/features/conversation/domain/message_status.dart';
 import 'package:kite/features/conversation/domain/message_type.dart';
 import 'package:kite/features/conversation/domain/repositories/conversation_repository.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_state.dart';
+import 'package:kite/features/media/domain/repositories/media_repository.dart';
+import 'package:kite/shared/di/injection_container.dart';
 
 class ConversationRoomController extends ValueNotifier<ConversationRoomState> {
   final ConversationRepository repository;
@@ -108,6 +111,65 @@ class ConversationRoomController extends ValueNotifier<ConversationRoomState> {
       }
     } catch (e) {
       debugPrint('Failed to send message: $e');
+    }
+  }
+
+  Future<void> sendMediaMessage({
+    required String conversationId,
+    required String currentUserId,
+    required String mediaType, // "IMAGE", "VIDEO", "FILE", "AUDIO"
+    required Uint8List rawBytes,
+    required String fileName,
+    String? caption,
+    String? recipientPublicKey,
+    Map<String, String>? memberPublicKeys,
+    String? groupKeyBase64,
+  }) async {
+    final tempMessage = MessageResponse(
+      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      conversationId: conversationId,
+      senderId: currentUserId,
+      encryptedPayload: EncryptedPayload(cipherText: caption ?? '[Media]'),
+      messageType: MessageType.media,
+      status: MessageStatus.sent,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    final updatedList = List<MessageResponse>.from(value.messages)
+      ..insert(0, tempMessage);
+    value = value.copyWith(messages: updatedList);
+
+    try {
+      final mediaRepository = sl<MediaRepository>();
+      final uploadResult = await mediaRepository.encryptAndUploadMedia(
+        rawBytes: rawBytes,
+        fileName: fileName,
+        mediaType: mediaType,
+        uploaderId: currentUserId,
+        conversationId: conversationId,
+        caption: caption,
+      );
+
+      final sentMessage = await repository.sendMessage(
+        conversationId: conversationId,
+        plainText: uploadResult.payload.encode(),
+        messageType: MessageType.media,
+        mediaUrl: uploadResult.mediaUrl,
+        recipientPublicKey: recipientPublicKey,
+        memberPublicKeys: memberPublicKeys,
+        groupKeyBase64: groupKeyBase64,
+      );
+
+      if (sentMessage != null) {
+        final finalList = value.messages.map((m) {
+          if (m.id == tempMessage.id) return sentMessage;
+          return m;
+        }).toList();
+        value = value.copyWith(messages: finalList);
+      }
+    } catch (e) {
+      debugPrint('Failed to send media message: $e');
     }
   }
 

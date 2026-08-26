@@ -1,5 +1,6 @@
 import 'package:kite/features/conversation/domain/encrypted_payload.dart';
 import 'package:kite/features/conversation/domain/message_type.dart';
+import 'package:kite/features/media/domain/models/encrypted_media_payload.dart';
 import 'package:kite/shared/security/encryption_service.dart';
 
 class LastMessage {
@@ -67,7 +68,28 @@ class LastMessage {
         currentUserId: currentUserId,
         groupKeyBase64: groupKeyBase64,
       );
-      if (decrypted.isNotEmpty) return decrypted;
+      if (decrypted.isNotEmpty) {
+        final mediaPayload = EncryptedMediaPayload.tryDecode(decrypted);
+        if (mediaPayload != null) {
+          final type = mediaPayload.mediaType.toUpperCase();
+          final String prefix;
+          if (type == 'VIDEO') {
+            prefix = 'Video';
+          } else if (type == 'AUDIO') {
+            prefix = 'Audio';
+          } else if (type == 'FILE') {
+            prefix = 'File';
+          } else {
+            prefix = 'Photo';
+          }
+          if (mediaPayload.caption != null &&
+              mediaPayload.caption!.isNotEmpty) {
+            return '$prefix: ${mediaPayload.caption}';
+          }
+          return prefix;
+        }
+        return decrypted;
+      }
     }
     return content.isNotEmpty ? content : 'Message';
   }

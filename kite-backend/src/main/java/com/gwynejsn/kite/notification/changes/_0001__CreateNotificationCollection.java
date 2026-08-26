@@ -14,6 +14,8 @@ public class _0001__CreateNotificationCollection {
 
     private static final String NOTIFICATIONS_COLLECTION = "notifications";
 
+    private static final String RECIPIENT_READ_CREATED_AT_INDEX = "recipientId_1_read_1_createdAt_-1";
+
     @Apply
     public void apply(MongoTemplate mongoTemplate) {
         Document compoundKeys = new Document();
@@ -23,11 +25,11 @@ public class _0001__CreateNotificationCollection {
 
         mongoTemplate.indexOps(NOTIFICATIONS_COLLECTION)
                 .createIndex(new CompoundIndexDefinition(compoundKeys)
-                        .named("recipientId_1_read_1_createdAt_-1"));
+                        .named(RECIPIENT_READ_CREATED_AT_INDEX));
     }
 
     @Rollback
     public void rollback(MongoTemplate mongoTemplate) {
-        mongoTemplate.indexOps(NOTIFICATIONS_COLLECTION).dropIndex("recipientId_1_read_1_createdAt_-1");
+        mongoTemplate.indexOps(NOTIFICATIONS_COLLECTION).dropIndex(RECIPIENT_READ_CREATED_AT_INDEX);
     }
 }

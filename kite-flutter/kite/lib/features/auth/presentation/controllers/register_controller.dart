@@ -1,13 +1,19 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kite/features/auth/presentation/controllers/register_state.dart';
+import 'package:kite/features/media/domain/repositories/media_repository.dart';
+import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/enums/gender.dart';
 import 'package:kite/shared/exceptions/authentication_exception.dart';
 
 class RegisterController extends ValueNotifier<RegisterState> {
   final AuthRepository _authRepository;
+  final MediaRepository? mediaRepository;
 
-  RegisterController(this._authRepository) : super(const RegisterState());
+  RegisterController(
+    this._authRepository, {
+    this.mediaRepository,
+  }) : super(const RegisterState());
 
   void updateEmail(String email) {
     value = value.copyWith(request: value.request.copyWith(email: email));
@@ -35,6 +41,13 @@ class RegisterController extends ValueNotifier<RegisterState> {
     value = value.copyWith(request: value.request.copyWith(gender: gender));
   }
 
+  void updateProfileImage(Uint8List bytes, String fileName) {
+    value = value.copyWith(
+      profileImageBytes: bytes,
+      profileImageName: fileName,
+    );
+  }
+
   void nextStep() {
     if (value.stepIndex < 2) {
       value = value.copyWith(
@@ -57,8 +70,24 @@ class RegisterController extends ValueNotifier<RegisterState> {
     value = value.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      await _authRepository.register(value.request);
-      value = value.copyWith(isLoading: false, isSuccess: true);
+      var currentRequest = value.request;
+
+      // Upload profile image (unencrypted) if user selected one
+      if (value.profileImageBytes != null && value.profileImageName != null) {
+        final mediaRepo = mediaRepository ?? sl<MediaRepository>();
+        final imageUrl = await mediaRepo.uploadUnencryptedMedia(
+          rawBytes: value.profileImageBytes!,
+          fileName: value.profileImageName!,
+        );
+        currentRequest = currentRequest.copyWith(profileImageLink: imageUrl);
+      }
+
+      await _authRepository.register(currentRequest);
+      value = value.copyWith(
+        isLoading: false,
+        isSuccess: true,
+        request: currentRequest,
+      );
     } on AuthenticationException catch (e) {
       value = value.copyWith(isLoading: false, errorMessage: e.message);
     } catch (e) {

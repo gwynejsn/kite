@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kite/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kite/features/auth/presentation/screens/login_page.dart';
+import 'package:kite/features/media/domain/repositories/media_repository.dart';
 import 'package:kite/features/profile/domain/user_profile.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
@@ -572,6 +574,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late Gender _gender;
   late PreferredTheme _preferredTheme;
   bool _isSaving = false;
+  bool _isUploadingImage = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -595,6 +599,84 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _bioController.dispose();
     _imageLinkController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 600,
+        maxHeight: 600,
+        imageQuality: 80,
+      );
+      if (image == null) return;
+
+      setState(() => _isUploadingImage = true);
+
+      final bytes = await image.readAsBytes();
+      final imageUrl = await sl<MediaRepository>().uploadUnencryptedMedia(
+        rawBytes: bytes,
+        fileName: image.name,
+      );
+
+      setState(() {
+        _imageLinkController.text = imageUrl;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile photo uploaded successfully!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error uploading profile image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload profile photo'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
+  void _showImagePickerModal() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: Colors.blue),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: Colors.green),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _handleSave() async {
@@ -658,6 +740,67 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 ],
               ),
               const SizedBox(height: 16),
+
+              // Avatar Preview & Upload Button
+              Center(
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 46,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      backgroundImage: _imageLinkController.text.isNotEmpty
+                          ? NetworkImage(_imageLinkController.text)
+                          : null,
+                      child: _isUploadingImage
+                          ? const CircularProgressIndicator()
+                          : (_imageLinkController.text.isEmpty
+                              ? Icon(
+                                  Icons.person_rounded,
+                                  size: 48,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
+                                )
+                              : null),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: InkWell(
+                        onTap: _isUploadingImage ? null : _showImagePickerModal,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.surface,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Center(
+                child: TextButton(
+                  onPressed: _isUploadingImage ? null : _showImagePickerModal,
+                  child: Text(
+                    _isUploadingImage ? 'Uploading...' : 'Change Profile Photo',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(

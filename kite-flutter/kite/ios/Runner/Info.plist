@@ -59,6 +59,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Kite needs access to your microphone to record audio notes.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Kite needs access to your camera to take photos and record videos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kite needs access to your photo library to select photos and videos.</string>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

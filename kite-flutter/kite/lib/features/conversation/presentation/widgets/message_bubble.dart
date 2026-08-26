@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/domain/conversation_type.dart';
 import 'package:kite/features/conversation/domain/message_response.dart';
+import 'package:kite/features/media/domain/models/encrypted_media_payload.dart';
+import 'package:kite/features/media/presentation/widgets/encrypted_audio_view.dart';
+import 'package:kite/features/media/presentation/widgets/encrypted_file_view.dart';
+import 'package:kite/features/media/presentation/widgets/encrypted_image_view.dart';
+import 'package:kite/features/media/presentation/widgets/encrypted_video_view.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
@@ -140,6 +145,58 @@ class MessageBubble extends StatelessWidget {
                       }
 
                       final text = snapshot.data ?? 'Encrypted Message';
+                      final mediaPayload = EncryptedMediaPayload.tryDecode(text);
+
+                      if (mediaPayload != null &&
+                          message.mediaUrl != null &&
+                          message.mediaUrl!.isNotEmpty) {
+                        final type = mediaPayload.mediaType.toUpperCase();
+                        return Column(
+                          crossAxisAlignment: isMe
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
+                          children: [
+                            if (type == 'IMAGE')
+                              EncryptedImageView(
+                                mediaUrl: message.mediaUrl!,
+                                payload: mediaPayload,
+                                width: 220,
+                                height: 220,
+                              )
+                            else if (type == 'VIDEO')
+                              EncryptedVideoView(
+                                mediaUrl: message.mediaUrl!,
+                                payload: mediaPayload,
+                                width: 240,
+                              )
+                            else if (type == 'AUDIO')
+                              EncryptedAudioView(
+                                mediaUrl: message.mediaUrl!,
+                                payload: mediaPayload,
+                                isMe: isMe,
+                              )
+                            else
+                              EncryptedFileView(
+                                mediaUrl: message.mediaUrl!,
+                                payload: mediaPayload,
+                                isMe: isMe,
+                              ),
+                            if (mediaPayload.caption != null &&
+                                mediaPayload.caption!.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                mediaPayload.caption!,
+                                style: TextStyle(
+                                  color: isMe
+                                      ? Theme.of(context).colorScheme.onPrimary
+                                      : Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      }
 
                       final isMatch = searchQuery.isNotEmpty &&
                           text.toLowerCase().contains(searchQuery);

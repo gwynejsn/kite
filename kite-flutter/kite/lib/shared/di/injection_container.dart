@@ -13,6 +13,9 @@ import 'package:kite/features/conversation/presentation/controllers/conversation
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_controller.dart';
 import 'package:kite/features/presence/data/presence_datasource.dart';
 import 'package:kite/features/presence/presentation/presence_provider.dart';
+import 'package:kite/features/media/data/datasources/media_remote_datasource.dart';
+import 'package:kite/features/media/data/repositories/media_repository_impl.dart';
+import 'package:kite/features/media/domain/repositories/media_repository.dart';
 import 'package:kite/features/social/data/datasources/social_datasource.dart';
 import 'package:kite/features/social/data/repositories/social_repository_impl.dart';
 import 'package:kite/features/social/domain/repositories/social_repository.dart';
@@ -87,6 +90,17 @@ void initDependencies() {
 
   sl.registerLazySingleton<SocialRepository>(
     () => SocialRepositoryImpl(sl<SocialDatasource>()),
+  );
+
+  sl.registerLazySingleton<MediaRemoteDatasource>(
+    () => MediaRemoteDatasource(sl<Dio>()),
+  );
+
+  sl.registerLazySingleton<MediaRepository>(
+    () => MediaRepositoryImpl(
+      mediaRemoteDatasource: sl<MediaRemoteDatasource>(),
+      encryptionService: sl<EncryptionService>(),
+    ),
   );
 
   sl.registerFactory<LoginController>(
