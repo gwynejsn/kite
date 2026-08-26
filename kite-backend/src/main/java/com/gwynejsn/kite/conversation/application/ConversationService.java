@@ -20,6 +20,7 @@ import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.infrastructure.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ public class ConversationService implements ConversationServiceApi {
     private final UserProfileServiceApi userProfileService;
     private final UserKeyServiceApi userKeyService;
     private final UserServiceApi userService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public List<ConversationResponse> getAllConversations(UserId currentId) {
         log.info("Get all conversations for user {}", currentId);
@@ -90,22 +92,41 @@ public class ConversationService implements ConversationServiceApi {
     public void initializeConversation(UserId currentUserId, UserId targetUserId) {
         log.info("Initializing conversation between {} and {}", currentUserId, targetUserId);
         Optional<Conversation> existing = conversationRepo.findByDirectMembers(currentUserId, targetUserId);
+        Conversation conversation;
         if (existing.isPresent()) {
             log.info("Direct conversation already exists between {} and {}", currentUserId, targetUserId);
-            return;
+            conversation = existing.get();
+        } else {
+            Instant now = Instant.now();
+            conversation = Conversation.builder()
+                    .id(new ConversationId())
+                    .type(ConversationType.DIRECT)
+                    .memberIds(Set.of(currentUserId, targetUserId))
+                    .createdAt(now)
+                    .updatedAt(now)
+                    .build();
+
+            conversationRepo.save(conversation);
+            log.info("Successfully initialized direct conversation {}", conversation.getId());
         }
 
-        Instant now = Instant.now();
-        Conversation conversation = Conversation.builder()
-                .id(new ConversationId())
-                .type(ConversationType.DIRECT)
-                .memberIds(Set.of(currentUserId, targetUserId))
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
+        // Broadcast conversation card to both users via WebSocket STOMP
+        broadcastConversationUpdate(conversation.getId());
+    }
 
-        conversationRepo.save(conversation);
-        log.info("Successfully initialized direct conversation {}", conversation.getId());
+    public void broadcastConversationUpdate(ConversationId conversationId) {
+        try {
+            Optional<Conversation> conversationOpt = conversationRepo.findConversationById(conversationId);
+            if (conversationOpt.isPresent()) {
+                Conversation conversation = conversationOpt.get();
+                for (UserId memberId : conversation.getMemberIds()) {
+                    ConversationResponse convResponse = mapToResponse(conversation, memberId);
+                    messagingTemplate.convertAndSend("/topic/user." + memberId.id().toString() + ".conversations", convResponse);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to broadcast conversation update for {}", conversationId, e);
+        }
     }
 
     /**
