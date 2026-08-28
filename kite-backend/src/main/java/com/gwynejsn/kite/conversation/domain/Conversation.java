@@ -39,6 +39,8 @@ public class Conversation {
     private Map<String, String> groupKeyMap = new HashMap<>();
 
     private LastMessage lastMessage;
+    @Builder.Default
+    private boolean disabled = false;
     private Instant createdAt;
     private Instant updatedAt;
 

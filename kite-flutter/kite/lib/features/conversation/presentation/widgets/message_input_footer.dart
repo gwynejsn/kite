@@ -14,6 +14,7 @@ class MessageInputFooter extends StatefulWidget {
   final VoidCallback? onPickFile;
   final VoidCallback? onPickAudio;
   final Function(Uint8List audioBytes, String fileName)? onSendVoiceNote;
+  final bool isBlocked;
 
   const MessageInputFooter({
     super.key,
@@ -24,6 +25,7 @@ class MessageInputFooter extends StatefulWidget {
     this.onPickFile,
     this.onPickAudio,
     this.onSendVoiceNote,
+    this.isBlocked = false,
   });
 
   @override
@@ -197,6 +199,45 @@ class _MessageInputFooterState extends State<MessageInputFooter> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (widget.isBlocked) {
+      return Container(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 14,
+          bottom: MediaQuery.of(context).padding.bottom + 14,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          border: Border(
+            top: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: 1.0,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.block_rounded,
+              size: 20,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Messaging is disabled because this user is blocked.',
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       padding: EdgeInsets.only(

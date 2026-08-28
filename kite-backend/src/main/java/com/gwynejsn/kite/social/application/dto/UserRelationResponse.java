@@ -9,6 +9,7 @@ public record UserRelationResponse(
         String requesterId,
         String addresseeId,
         RelationStatus status,
+        boolean blocked,
         Instant createdAt,
         Instant updatedAt
 ) {

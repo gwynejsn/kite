@@ -1,1 +1,1 @@
-enum RelationStatus { pending, accepted, declined, blocked }
+enum RelationStatus { pending, accepted, declined }

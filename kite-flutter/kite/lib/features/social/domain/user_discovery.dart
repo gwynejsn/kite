@@ -11,6 +11,7 @@ class UserDiscovery {
   final bool? isRequester;
   final String? relationId;
   final String? publicKey;
+  final bool blocked;
 
   const UserDiscovery({
     required this.userId,
@@ -23,6 +24,7 @@ class UserDiscovery {
     this.isRequester,
     this.relationId,
     this.publicKey,
+    this.blocked = false,
   });
 
   factory UserDiscovery.fromJson(Map<String, dynamic> json) {
@@ -42,6 +44,7 @@ class UserDiscovery {
       isRequester: json['isRequester'] as bool?,
       relationId: json['relationId'] as String?,
       publicKey: json['publicKey'] as String?,
+      blocked: json['blocked'] as bool? ?? false,
     );
   }
 }

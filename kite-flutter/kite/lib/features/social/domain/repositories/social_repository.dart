@@ -6,4 +6,5 @@ abstract interface class SocialRepository {
   Future<void> acceptFriendRequest(String relationId);
   Future<void> declineFriendRequest(String relationId);
   Future<void> blockUser(String targetUserId);
+  Future<void> unblockUser(String targetUserId);
 }

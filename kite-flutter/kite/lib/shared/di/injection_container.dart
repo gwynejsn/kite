@@ -119,7 +119,7 @@ void initDependencies() {
     () => ConversationRoomController(sl<ConversationRepository>()),
   );
 
-  sl.registerFactory<SocialController>(
+  sl.registerLazySingleton<SocialController>(
     () => SocialController(sl<SocialRepository>()),
   );
 }

@@ -1,6 +1,5 @@
 package com.gwynejsn.kite.social.application;
 
-import com.gwynejsn.kite.conversation.api.ConversationServiceApi;
 import com.gwynejsn.kite.profile.api.UserProfileResponse;
 import com.gwynejsn.kite.profile.api.UserProfileServiceApi;
 import com.gwynejsn.kite.shared.domain.UserId;
@@ -14,6 +13,10 @@ import com.gwynejsn.kite.social.application.exceptions.RelationNotFoundException
 import com.gwynejsn.kite.social.application.exceptions.RelationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import com.gwynejsn.kite.social.domain.events.FriendRequestAcceptedEvent;
+import com.gwynejsn.kite.social.domain.events.UserBlockedEvent;
+import com.gwynejsn.kite.social.domain.events.UserUnblockedEvent;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -31,7 +34,7 @@ public class SocialService {
 
     private final UserRelationRepository userRelationRepository;
     private final UserProfileServiceApi userProfileServiceApi;
-    private final ConversationServiceApi conversationServiceApi;
+    private final ApplicationEventPublisher events;
 
     /**
      * Create a relation with status pending, or if declined, send another one
@@ -92,12 +95,8 @@ public class SocialService {
         UserRelation saved = userRelationRepository.save(relation);
         log.info("Accepted friend request relation {}", relationId);
 
-        // automatically initialize direct conversation between both users
-        try {
-            conversationServiceApi.initializeConversation(currentUserId, relation.getRequesterId());
-        } catch (Exception e) {
-            log.error("Failed to initialize conversation upon accepting friend request", e);
-        }
+        // automatically publish event to initialize direct conversation between both users
+        events.publishEvent(new FriendRequestAcceptedEvent(currentUserId, relation.getRequesterId()));
 
         return INSTANCE.toUserRelationResponse(saved);
     }
@@ -118,12 +117,12 @@ public class SocialService {
     }
 
     /**
-     * Block a user even if you already have a relation
+     * Block or unblock a user even if you already have a relation
      * @param currentUserId
      * @param targetUserId
      * @return UserRelationResponse
      */
-    public UserRelationResponse blockUser(UserId currentUserId, UserId targetUserId) {
+    public UserRelationResponse setUserBlockOption(UserId currentUserId, UserId targetUserId, boolean blocked) {
         Optional<UserRelation> existingRelation = userRelationRepository.findRelationBetween(currentUserId, targetUserId);
 
         UserRelation relation;
@@ -131,27 +130,35 @@ public class SocialService {
             relation = existingRelation.get();
             relation.setRequesterId(currentUserId);
             relation.setAddresseeId(targetUserId);
-            relation.setStatus(RelationStatus.BLOCKED);
+            relation.setBlocked(blocked);
             relation.setUpdatedAt(Instant.now());
         } else {
             relation = UserRelation.builder()
                     .id(new RelationId())
                     .requesterId(currentUserId)
                     .addresseeId(targetUserId)
-                    .status(RelationStatus.BLOCKED)
+                    .blocked(blocked)
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
                     .build();
         }
 
         UserRelation saved = userRelationRepository.save(relation);
-        log.info("User {} blocked target user {}", currentUserId, targetUserId);
+        log.info("User {} {} target user {}", currentUserId, blocked ? "blocked" : "unblocked", targetUserId);
+
+        if (blocked) {
+            events.publishEvent(new UserBlockedEvent(currentUserId, targetUserId));
+        } else {
+            events.publishEvent(new UserUnblockedEvent(currentUserId, targetUserId));
+        }
+
         return INSTANCE.toUserRelationResponse(saved);
     }
 
     public List<UserRelationResponse> getPendingRequests(UserId currentUserId) {
         return userRelationRepository.findByAddresseeIdAndStatus(currentUserId, RelationStatus.PENDING)
                 .stream()
+                .filter(r -> !r.isBlocked())
                 .map(INSTANCE::toUserRelationResponse)
                 .toList();
     }
@@ -159,6 +166,7 @@ public class SocialService {
     public List<UserRelationResponse> getFriends(UserId currentUserId) {
         return userRelationRepository.findAllRelationsByUserIdAndStatus(currentUserId, RelationStatus.ACCEPTED)
                 .stream()
+                .filter(r -> !r.isBlocked())
                 .map(INSTANCE::toUserRelationResponse)
                 .toList();
     }
@@ -189,11 +197,13 @@ public class SocialService {
                     RelationStatus status = null;
                     Boolean isRequester = null;
                     String relationIdStr = null;
+                    Boolean blocked = null;
 
                     if (relation != null) {
                         status = relation.getStatus();
                         isRequester = relation.getRequesterId().equals(currentUserId);
                         relationIdStr = relation.getId().id().toString();
+                        blocked = relation.isBlocked();
                     }
 
                     return new UserDiscoveryResponse(
@@ -206,7 +216,8 @@ public class SocialService {
                             status,
                             isRequester,
                             relationIdStr,
-                            profile.publicKey()
+                            profile.publicKey(),
+                            blocked
                     );
                 })
                 .toList();

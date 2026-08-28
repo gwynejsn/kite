@@ -31,4 +31,9 @@ class SocialRepositoryImpl implements SocialRepository {
   Future<void> blockUser(String targetUserId) {
     return datasource.blockUser(targetUserId);
   }
+
+  @override
+  Future<void> unblockUser(String targetUserId) {
+    return datasource.unblockUser(targetUserId);
+  }
 }

@@ -63,6 +63,15 @@ class SocialDatasource {
     }
   }
 
+  Future<void> unblockUser(String targetUserId) async {
+    try {
+      await dio.post('/social/unblock/$targetUserId');
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(e, fallback: 'Failed to unblock user');
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
   String _extractErrorMessage(DioException e, {required String fallback}) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||
