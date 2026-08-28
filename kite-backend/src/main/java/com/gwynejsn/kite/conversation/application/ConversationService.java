@@ -129,6 +129,20 @@ public class ConversationService implements ConversationServiceApi {
         }
     }
 
+    @Override
+    @Transactional
+    public void setDirectConversationDisabled(UserId userA, UserId userB, boolean disabled) {
+        Optional<Conversation> existing = conversationRepo.findByDirectMembers(userA, userB);
+        if (existing.isPresent()) {
+            Conversation conversation = existing.get();
+            conversation.setDisabled(disabled);
+            conversation.setUpdatedAt(Instant.now());
+            conversationRepo.save(conversation);
+            log.info("Set conversation {} disabled={}", conversation.getId(), disabled);
+            broadcastConversationUpdate(conversation.getId());
+        }
+    }
+
     /**
      * helper that resolves name, photo, member public keys, and member profiles
      */
@@ -160,6 +174,7 @@ public class ConversationService implements ConversationServiceApi {
 
         String name = baseResponse.name();
         String profilePhoto = baseResponse.conversationPhoto();
+        boolean disabled = conversation.isDisabled();
 
         // maps the user's profile picture and name appropriately if 1-1 chat
         if (conversation.getType() == ConversationType.DIRECT) {
@@ -202,6 +217,7 @@ public class ConversationService implements ConversationServiceApi {
                 memberPublicKeys,
                 conversation.getGroupKeyMap(),
                 baseResponse.lastMessage(),
+                disabled,
                 baseResponse.createdAt(),
                 baseResponse.updatedAt()
         );

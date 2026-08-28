@@ -4,5 +4,4 @@ public enum RelationStatus {
     PENDING,
     ACCEPTED,
     DECLINED,
-    BLOCKED
 }

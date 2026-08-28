@@ -63,7 +63,16 @@ public class SocialController {
             @PathVariable String targetUserId
     ) {
         UserId targetId = new UserId(targetUserId);
-        return ResponseEntity.ok(socialService.blockUser(authenticatedUser.getUserId(), targetId));
+        return ResponseEntity.ok(socialService.setUserBlockOption(authenticatedUser.getUserId(), targetId, true));
+    }
+
+    @PostMapping("/unblock/{targetUserId}")
+    public ResponseEntity<UserRelationResponse> unblockUser(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @PathVariable String targetUserId
+    ) {
+        UserId targetId = new UserId(targetUserId);
+        return ResponseEntity.ok(socialService.setUserBlockOption(authenticatedUser.getUserId(), targetId, false));
     }
 
     @GetMapping("/pending")

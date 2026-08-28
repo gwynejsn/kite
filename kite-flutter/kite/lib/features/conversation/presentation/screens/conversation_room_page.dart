@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/domain/conversation_type.dart';
-import 'package:kite/features/media/domain/repositories/media_repository.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_room_state.dart';
@@ -13,8 +12,12 @@ import 'package:kite/features/conversation/presentation/widgets/conversation_roo
 import 'package:kite/features/conversation/presentation/widgets/date_divider.dart';
 import 'package:kite/features/conversation/presentation/widgets/message_bubble.dart';
 import 'package:kite/features/conversation/presentation/widgets/message_input_footer.dart';
+import 'package:kite/features/media/domain/repositories/media_repository.dart';
 import 'package:kite/features/presence/presentation/presence_provider.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
+import 'package:kite/features/social/domain/user_discovery.dart';
+import 'package:kite/features/social/presentation/controllers/social_controller.dart';
+import 'package:kite/features/social/presentation/controllers/social_state.dart';
 import 'package:kite/shared/di/injection_container.dart';
 import 'package:kite/shared/security/encryption_service.dart';
 import 'package:provider/provider.dart';
@@ -42,6 +45,11 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
     super.initState();
     _controller = sl<ConversationRoomController>();
     _controller.initRoom(widget.conversation.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (sl<SocialController>().value.people.isEmpty) {
+        sl<SocialController>().fetchPeople();
+      }
+    });
 
     _scrollController.addListener(() {
       final show =
@@ -64,7 +72,9 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
   }
 
   Future<void> _handleSendMessage(
-      String? currentUserId, Conversation activeConv) async {
+    String? currentUserId,
+    Conversation activeConv,
+  ) async {
     final content = _textController.text.trim();
     if (content.isNotEmpty && currentUserId != null) {
       _textController.clear();
@@ -235,7 +245,10 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
   }
 
   void _openConversationDetailsPage(
-      BuildContext context, bool isOnline, Conversation activeConv) {
+    BuildContext context,
+    bool isOnline,
+    Conversation activeConv,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -306,8 +319,10 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
           orElse: () => widget.conversation,
         );
 
-        final currentUserId =
-            context.watch<UserProfileProvider>().userProfile?.userId;
+        final currentUserId = context
+            .watch<UserProfileProvider>()
+            .userProfile
+            ?.userId;
         final presenceProvider = context.watch<PresenceProvider>();
 
         final otherMemberId = activeConv.memberIds.firstWhere(
@@ -340,7 +355,8 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                   'assets/images/kite_pattern.png',
                   repeat: ImageRepeat.repeat,
                   opacity: const AlwaysStoppedAnimation(0.04),
-                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox(),
                 ),
               ),
               Column(
@@ -351,7 +367,8 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                       builder: (context, state, child) {
                         if (state.isLoading && state.messages.isEmpty) {
                           return const Center(
-                              child: CircularProgressIndicator());
+                            child: CircularProgressIndicator(),
+                          );
                         }
 
                         if (state.errorMessage != null &&
@@ -372,7 +389,9 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                                     state.errorMessage!,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: Theme.of(context).colorScheme.error,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -406,9 +425,9 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                                 Text(
                                   'No messages here yet.',
                                   style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                     fontSize: 15,
                                   ),
                                 ),
@@ -478,10 +497,12 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: FloatingActionButton.small(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.primaryContainer,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimaryContainer,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
                         elevation: 4,
                         onPressed: () {
                           _scrollController.animateTo(
@@ -495,38 +516,65 @@ class _ConversationRoomPageState extends State<ConversationRoomPage> {
                     ),
 
                   // Message Input Field Footer
-                  MessageInputFooter(
-                    textController: _textController,
-                    onSend: () => _handleSendMessage(currentUserId, activeConv),
-                    onPickImage: (source) => _handlePickMedia(
-                      currentUserId,
-                      activeConv,
-                      isVideo: false,
-                      source: source,
-                    ),
-                    onPickVideo: (source) => _handlePickMedia(
-                      currentUserId,
-                      activeConv,
-                      isVideo: true,
-                      source: source,
-                    ),
-                    onPickFile: () => _handlePickDocumentOrAudio(
-                      currentUserId,
-                      activeConv,
-                      isAudio: false,
-                    ),
-                    onPickAudio: () => _handlePickDocumentOrAudio(
-                      currentUserId,
-                      activeConv,
-                      isAudio: true,
-                    ),
-                    onSendVoiceNote: (audioBytes, fileName) =>
-                        _handleSendVoiceNote(
-                      currentUserId,
-                      activeConv,
-                      audioBytes,
-                      fileName,
-                    ),
+                  ValueListenableBuilder<SocialState>(
+                    valueListenable: sl<SocialController>(),
+                    builder: (context, socialState, child) {
+                      bool isBlocked = activeConv.isDisabled;
+                      if (!isBlocked &&
+                          activeConv.type == ConversationType.direct &&
+                          otherMemberId.isNotEmpty) {
+                        final otherUser = socialState.people.firstWhere(
+                          (p) => p.userId == otherMemberId,
+                          orElse: () => const UserDiscovery(
+                            userId: '',
+                            firstName: '',
+                            lastName: '',
+                            username: '',
+                            profileImageLink: '',
+                            bio: '',
+                          ),
+                        );
+                        if (otherUser.blocked) {
+                          isBlocked = true;
+                        }
+                      }
+
+                      return MessageInputFooter(
+                        isBlocked: isBlocked,
+                        textController: _textController,
+                        onSend: () =>
+                            _handleSendMessage(currentUserId, activeConv),
+                        onPickImage: (source) => _handlePickMedia(
+                          currentUserId,
+                          activeConv,
+                          isVideo: false,
+                          source: source,
+                        ),
+                        onPickVideo: (source) => _handlePickMedia(
+                          currentUserId,
+                          activeConv,
+                          isVideo: true,
+                          source: source,
+                        ),
+                        onPickFile: () => _handlePickDocumentOrAudio(
+                          currentUserId,
+                          activeConv,
+                          isAudio: false,
+                        ),
+                        onPickAudio: () => _handlePickDocumentOrAudio(
+                          currentUserId,
+                          activeConv,
+                          isAudio: true,
+                        ),
+                        onSendVoiceNote: (audioBytes, fileName) =>
+                            _handleSendVoiceNote(
+                              currentUserId,
+                              activeConv,
+                              audioBytes,
+                              fileName,
+                            ),
+                      );
+                    },
                   ),
                 ],
               ),

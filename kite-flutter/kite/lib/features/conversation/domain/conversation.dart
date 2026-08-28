@@ -15,6 +15,7 @@ class Conversation {
   final Map<String, String> memberPublicKeys;
   final Map<String, String> groupKeyMap;
   final LastMessage? lastMessage;
+  final bool isDisabled;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,6 +30,7 @@ class Conversation {
     this.memberPublicKeys = const {},
     this.groupKeyMap = const {},
     this.lastMessage,
+    this.isDisabled = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -96,6 +98,9 @@ class Conversation {
       lastMessage: json['lastMessage'] != null
           ? LastMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
           : null,
+      isDisabled: json['disabled'] as bool? ??
+          json['isDisabled'] as bool? ??
+          false,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -115,6 +120,7 @@ class Conversation {
     Map<String, MemberProfile>? memberProfiles,
     Map<String, String>? memberPublicKeys,
     LastMessage? lastMessage,
+    bool? isDisabled,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -128,6 +134,7 @@ class Conversation {
       memberProfiles: memberProfiles ?? this.memberProfiles,
       memberPublicKeys: memberPublicKeys ?? this.memberPublicKeys,
       lastMessage: lastMessage ?? this.lastMessage,
+      isDisabled: isDisabled ?? this.isDisabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

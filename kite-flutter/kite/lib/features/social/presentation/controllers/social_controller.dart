@@ -65,4 +65,13 @@ class SocialController extends ValueNotifier<SocialState> {
       value = value.copyWith(errorMessage: e.toString());
     }
   }
+
+  Future<void> unblockUser(String targetUserId) async {
+    try {
+      await _repository.unblockUser(targetUserId);
+      await fetchPeople();
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+    }
+  }
 }

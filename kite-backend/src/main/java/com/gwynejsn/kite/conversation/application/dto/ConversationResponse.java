@@ -17,6 +17,7 @@ public record ConversationResponse(
         Map<String, String> memberPublicKeys,
         Map<String, String> groupKeyMap,
         LastMessageResponse lastMessage,
+        boolean disabled,
         Instant createdAt,
         Instant updatedAt
 ) { }

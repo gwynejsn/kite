@@ -24,25 +24,36 @@ class _SocialPageState extends State<SocialPage>
   void initState() {
     super.initState();
     _controller = sl<SocialController>();
-    _controller.fetchPeople();
-    _tabController = TabController(length: 3, vsync: this);
+    _controller.addListener(_onSocialStateChanged);
+    _tabController = TabController(length: 4, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.fetchPeople();
+    });
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onSocialStateChanged);
     _tabController.dispose();
-    _controller.dispose();
     super.dispose();
   }
 
+  void _onSocialStateChanged() {
+    _syncPresences(_controller.value);
+  }
+
   void _syncPresences(SocialState state) {
-    if (state.people.isNotEmpty) {
+    if (state.people.isNotEmpty && mounted) {
       final friendIds = state.people
-          .where((p) => p.relationStatus == RelationStatus.accepted)
+          .where((p) => p.relationStatus == RelationStatus.accepted && !p.blocked)
           .map((p) => p.userId)
           .toSet();
       if (friendIds.isNotEmpty) {
-        context.read<PresenceProvider>().fetchAndTrackPresences(friendIds);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<PresenceProvider>().fetchAndTrackPresences(friendIds);
+          }
+        });
       }
     }
   }
@@ -52,13 +63,19 @@ class _SocialPageState extends State<SocialPage>
     return ValueListenableBuilder<SocialState>(
       valueListenable: _controller,
       builder: (context, state, child) {
-        _syncPresences(state);
 
         final pendingCount = state.people
             .where(
               (p) =>
                   p.relationStatus == RelationStatus.pending &&
-                  p.isRequester != true,
+                  p.isRequester != true &&
+                  !p.blocked,
+            )
+            .length;
+
+        final blockedCount = state.people
+            .where(
+              (p) => p.blocked && p.isRequester == true,
             )
             .length;
 
@@ -105,6 +122,11 @@ class _SocialPageState extends State<SocialPage>
                           : 'Requests',
                     ),
                     const Tab(text: 'Friends'),
+                    Tab(
+                      text: blockedCount > 0
+                          ? 'Blocked ($blockedCount)'
+                          : 'Blocked',
+                    ),
                   ],
                 ),
               ),
@@ -149,13 +171,16 @@ class _SocialPageState extends State<SocialPage>
               }
 
               final discoverList = state.people
-                  .where((p) => p.relationStatus == null)
+                  .where((p) => p.relationStatus == null && !p.blocked)
                   .toList();
               final requestsList = state.people
-                  .where((p) => p.relationStatus == RelationStatus.pending)
+                  .where((p) => p.relationStatus == RelationStatus.pending && !p.blocked)
                   .toList();
               final friendsList = state.people
-                  .where((p) => p.relationStatus == RelationStatus.accepted)
+                  .where((p) => p.relationStatus == RelationStatus.accepted && !p.blocked)
+                  .toList();
+              final blockedList = state.people
+                  .where((p) => p.blocked && p.isRequester == true)
                   .toList();
 
               final presenceProvider = context.watch<PresenceProvider>();
@@ -216,6 +241,11 @@ class _SocialPageState extends State<SocialPage>
                           users: friendsList,
                           emptyMessage:
                               'No friends added yet. Discover people to connect!',
+                          controller: _controller,
+                        ),
+                        _UserListView(
+                          users: blockedList,
+                          emptyMessage: 'No blocked users.',
                           controller: _controller,
                         ),
                       ],
@@ -411,6 +441,21 @@ class _UserCard extends StatelessWidget {
 }
 
   Widget _buildActionButtons(BuildContext context) {
+    // 0. Blocked Users Tab
+    if (user.blocked && user.isRequester == true) {
+      return OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        ),
+        onPressed: () => controller.unblockUser(user.userId),
+        icon: const Icon(Icons.lock_open_rounded, size: 18),
+        label: const Text('Unblock'),
+      );
+    }
+
     // 1. Discover Tab (Not Connected)
     if (user.relationStatus == null) {
       return ElevatedButton.icon(
@@ -779,7 +824,27 @@ class _UserProfileDetailSheet extends StatelessWidget {
           // Action Buttons
           Row(
             children: [
-              if (user.relationStatus == RelationStatus.accepted) ...[
+              if (user.blocked && user.isRequester == true) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () {
+                      controller.unblockUser(user.userId);
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.lock_open_rounded),
+                    label: const Text(
+                      'Unblock User',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ] else if (user.relationStatus == RelationStatus.accepted) ...[
                 Expanded(
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(

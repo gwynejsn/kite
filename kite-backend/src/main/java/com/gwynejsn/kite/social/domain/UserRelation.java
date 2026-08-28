@@ -23,6 +23,7 @@ public class UserRelation {
     private UserId requesterId;
     private UserId addresseeId;
     private RelationStatus status;
+    private boolean blocked = false;
     private Instant createdAt;
     private Instant updatedAt;
 

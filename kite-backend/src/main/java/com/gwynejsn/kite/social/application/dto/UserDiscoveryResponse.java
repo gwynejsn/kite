@@ -12,6 +12,7 @@ public record UserDiscoveryResponse(
         RelationStatus relationStatus,
         Boolean isRequester,
         String relationId,
-        String publicKey
+        String publicKey,
+        Boolean blocked
 ) {
 }
