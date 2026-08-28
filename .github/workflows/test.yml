@@ -22,6 +22,7 @@ jobs:
 
       - name: Start MongoDB Replica Set Infrastructure
         run: |
+          sudo echo "127.0.0.1 mongodb" | sudo tee -a /etc/hosts
           docker compose up -d mongodb mongo-init-replica
           docker wait mongo-init-replica
 
