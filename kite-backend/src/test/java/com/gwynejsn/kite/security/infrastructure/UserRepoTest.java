@@ -3,30 +3,50 @@ package com.gwynejsn.kite.security.infrastructure;
 import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.enums.Role;
+import com.gwynejsn.kite.shared.config.MongoConfig;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.boot.data.mongodb.test.autoconfigure.DataMongoTest;
+import org.springframework.context.annotation.Import;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataMongoTest
+@Import(MongoConfig.class)
 class UserRepoTest {
 
     @Autowired
     private UserRepo userRepo;
 
+    private final List<UserId> createdIds = new ArrayList<>();
+
     @BeforeEach
     void setUp() {
-        userRepo.deleteAll();
+        createdIds.clear();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (!createdIds.isEmpty()) {
+            userRepo.deleteAllById(createdIds);
+        }
     }
 
     @Test
-    @DisplayName("Should save and find user by email")
+    @DisplayName("""
+            GIVEN: User exists in database
+            WHEN: findUserByEmail is called with matching email
+            THEN: User is returned successfully
+            AND: no exception is thrown
+            """)
     void findUserByEmail_success() {
         UserId userId = new UserId(UUID.randomUUID());
         User user = User.builder()
@@ -39,6 +59,7 @@ class UserRepoTest {
                 .build();
 
         userRepo.save(user);
+        createdIds.add(userId);
 
         var found = userRepo.findUserByEmail("john.doe@example.com");
 
@@ -48,7 +69,12 @@ class UserRepoTest {
     }
 
     @Test
-    @DisplayName("Should save and find user by id")
+    @DisplayName("""
+            GIVEN: User exists in database
+            WHEN: findUserById is called with matching userId
+            THEN: User is returned successfully
+            AND: no exception is thrown
+            """)
     void findUserById_success() {
         UserId userId = new UserId(UUID.randomUUID());
         User user = User.builder()
@@ -61,6 +87,7 @@ class UserRepoTest {
                 .build();
 
         userRepo.save(user);
+        createdIds.add(userId);
 
         var found = userRepo.findUserById(userId);
 
@@ -70,7 +97,12 @@ class UserRepoTest {
     }
 
     @Test
-    @DisplayName("Should return empty when user email does not exist")
+    @DisplayName("""
+            GIVEN: User email does not exist in database
+            WHEN: findUserByEmail is called
+            THEN: Empty optional is returned
+            AND: no exception is thrown
+            """)
     void findUserByEmail_notFound() {
         var found = userRepo.findUserByEmail("missing@example.com");
 
