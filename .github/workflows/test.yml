@@ -16,20 +16,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      mongodb:
-        image: mongo:7.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Start MongoDB Replica Set Infrastructure
+        run: |
+          docker compose up -d mongodb mongo-init-replica
+          docker wait mongo-init-replica
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
