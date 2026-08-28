@@ -1,0 +1,63 @@
+name: Test Backend & Generate Coverage
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Grant execute permission for mvnw
+        run: chmod +x kite-backend/mvnw
+
+      - name: Run Backend Tests & JaCoCo Report
+        run: |
+          cd kite-backend
+          ./mvnw clean test
+
+      - name: Generate JaCoCo Coverage Badges
+        id: jacoco
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: kite-backend/target/site/jacoco/jacoco.csv
+          badges-directory: .github/badges
+          generate-branches-badge: true
+          generate-summary: true
+
+      - name: Log Coverage Summary
+        run: |
+          echo "Coverage: ${{ steps.jacoco.outputs.coverage }}"
+          echo "Branches: ${{ steps.jacoco.outputs.branches }}"
+
+      - name: Commit and Push Badges
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: EndBug/add-and-commit@v9
+        with:
+          default_author: github_actions
+          message: 'chore: update JaCoCo coverage badges [skip ci]'
+          add: '.github/badges/*.svg'
+
+      - name: Upload JaCoCo Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: kite-backend/target/site/jacoco/
