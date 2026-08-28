@@ -1,8 +1,8 @@
 # 🪁 Kite Backend
 
 [![Test Backend](https://github.com/gwynejsn/kite/actions/workflows/test.yml/badge.svg)](https://github.com/gwynejsn/kite/actions/workflows/test.yml)
-![Coverage](../.github/badges/jacoco.svg)
-![Branches](../.github/badges/branches.svg)
+![Coverage](https://raw.githubusercontent.com/gwynejsn/kite/badges/jacoco.svg)
+![Branches](https://raw.githubusercontent.com/gwynejsn/kite/badges/branches.svg)
 
 Spring Boot 3 backend application powering the Kite real-time E2EE messaging platform.
 
