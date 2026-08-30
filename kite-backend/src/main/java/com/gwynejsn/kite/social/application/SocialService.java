@@ -78,6 +78,10 @@ public class SocialService {
         return INSTANCE.toUserRelationResponse(saved);
     }
 
+    public void cancelFriendRequest(RelationId relationId) {
+        userRelationRepository.deleteById(relationId);
+    }
+
     public UserRelationResponse acceptFriendRequest(UserId currentUserId, RelationId relationId) {
         UserRelation relation = userRelationRepository.findById(relationId)
                 .orElseThrow(() -> new RelationNotFoundException("Relation not found: " + relationId));

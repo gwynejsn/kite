@@ -39,6 +39,16 @@ public class SocialController {
         return ResponseEntity.ok(socialService.sendFriendRequest(authenticatedUser.getUserId(), targetId));
     }
 
+    @PostMapping("/request/cancel/{relationId}")
+    public ResponseEntity<Void> cancelFriendRequest(
+            @PathVariable String relationId
+    ) {
+        RelationId id = new RelationId(UUID.fromString(relationId));
+        socialService.cancelFriendRequest(id);
+        return ResponseEntity.noContent().build();
+    }
+
+
     @PutMapping("/accept/{relationId}")
     public ResponseEntity<UserRelationResponse> acceptFriendRequest(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
