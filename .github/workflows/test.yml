@@ -47,10 +47,9 @@ jobs:
         uses: cicirello/jacoco-badge-generator@v2
         with:
           jacoco-csv-file: kite-backend/target/site/jacoco/jacoco.csv
-          badges-directory: badges
+          badges-directory: .github/badges
           generate-branches-badge: true
           generate-summary: true
-          target-branch: badges
 
       - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v4
