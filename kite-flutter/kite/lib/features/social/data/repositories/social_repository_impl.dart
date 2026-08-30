@@ -18,6 +18,11 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<void> cancelFriendRequest(String relationId) {
+    return datasource.cancelFriendRequest(relationId);
+  }
+
+  @override
   Future<void> acceptFriendRequest(String relationId) {
     return datasource.acceptFriendRequest(relationId);
   }

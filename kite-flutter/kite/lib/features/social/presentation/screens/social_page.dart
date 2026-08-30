@@ -45,7 +45,9 @@ class _SocialPageState extends State<SocialPage>
   void _syncPresences(SocialState state) {
     if (state.people.isNotEmpty && mounted) {
       final friendIds = state.people
-          .where((p) => p.relationStatus == RelationStatus.accepted && !p.blocked)
+          .where(
+            (p) => p.relationStatus == RelationStatus.accepted && !p.blocked,
+          )
           .map((p) => p.userId)
           .toSet();
       if (friendIds.isNotEmpty) {
@@ -63,7 +65,6 @@ class _SocialPageState extends State<SocialPage>
     return ValueListenableBuilder<SocialState>(
       valueListenable: _controller,
       builder: (context, state, child) {
-
         final pendingCount = state.people
             .where(
               (p) =>
@@ -74,9 +75,7 @@ class _SocialPageState extends State<SocialPage>
             .length;
 
         final blockedCount = state.people
-            .where(
-              (p) => p.blocked && p.isRequester == true,
-            )
+            .where((p) => p.blocked && p.isRequester == true)
             .length;
 
         return Scaffold(
@@ -94,10 +93,9 @@ class _SocialPageState extends State<SocialPage>
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest
-                      .withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(28),
                 ),
                 child: TabBar(
@@ -110,8 +108,9 @@ class _SocialPageState extends State<SocialPage>
                     borderRadius: BorderRadius.circular(24),
                   ),
                   labelColor: Theme.of(context).colorScheme.onPrimary,
-                  unselectedLabelColor:
-                      Theme.of(context).colorScheme.onSurfaceVariant,
+                  unselectedLabelColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                   labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                   dividerColor: Colors.transparent,
                   tabs: [
@@ -174,10 +173,18 @@ class _SocialPageState extends State<SocialPage>
                   .where((p) => p.relationStatus == null && !p.blocked)
                   .toList();
               final requestsList = state.people
-                  .where((p) => p.relationStatus == RelationStatus.pending && !p.blocked)
+                  .where(
+                    (p) =>
+                        p.relationStatus == RelationStatus.pending &&
+                        !p.blocked,
+                  )
                   .toList();
               final friendsList = state.people
-                  .where((p) => p.relationStatus == RelationStatus.accepted && !p.blocked)
+                  .where(
+                    (p) =>
+                        p.relationStatus == RelationStatus.accepted &&
+                        !p.blocked,
+                  )
                   .toList();
               final blockedList = state.people
                   .where((p) => p.blocked && p.isRequester == true)
@@ -198,10 +205,9 @@ class _SocialPageState extends State<SocialPage>
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primaryContainer
-                            .withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -340,7 +346,8 @@ class _UserCard extends StatelessWidget {
         ? nameDisplay[0].toUpperCase()
         : 'U';
 
-    final isOnline = user.relationStatus == RelationStatus.accepted &&
+    final isOnline =
+        user.relationStatus == RelationStatus.accepted &&
         context.watch<PresenceProvider>().isUserOnline(user.userId);
 
     return Card(
@@ -351,94 +358,95 @@ class _UserCard extends StatelessWidget {
         onTap: () => _showUserProfileModal(context, user, isOnline, controller),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
-                  backgroundImage: user.profileImageLink.isNotEmpty
-                      ? NetworkImage(user.profileImageLink)
-                      : null,
-                  child: user.profileImageLink.isEmpty
-                      ? Text(
-                          initials,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onPrimaryContainer,
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
+                    backgroundImage: user.profileImageLink.isNotEmpty
+                        ? NetworkImage(user.profileImageLink)
+                        : null,
+                    child: user.profileImageLink.isEmpty
+                        ? Text(
+                            initials,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
+                          )
+                        : null,
+                  ),
+                  if (isOnline)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.surface,
+                            width: 2.5,
                           ),
-                        )
-                      : null,
-                ),
-                if (isOnline)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.surface,
-                          width: 2.5,
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    nameDisplay,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '@${user.username}',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 13,
-                    ),
-                  ),
-                  if (user.bio.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      user.bio,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            _buildActionButtons(context),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nameDisplay,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${user.username}',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
+                    if (user.bio.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        user.bio,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildActionButtons(context),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildActionButtons(BuildContext context) {
     // 0. Blocked Users Tab
@@ -482,7 +490,7 @@ class _UserCard extends StatelessWidget {
             ),
           ),
           onPressed: user.relationId != null
-              ? () => controller.declineFriendRequest(user.relationId!)
+              ? () => controller.cancelFriendRequest(user.relationId!)
               : null,
           child: const Text('Cancel'),
         );
@@ -640,8 +648,9 @@ class _UserProfileDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final fullName = '${user.firstName} ${user.lastName}'.trim();
     final nameDisplay = fullName.isNotEmpty ? fullName : user.username;
-    final initials =
-        nameDisplay.isNotEmpty ? nameDisplay[0].toUpperCase() : 'U';
+    final initials = nameDisplay.isNotEmpty
+        ? nameDisplay[0].toUpperCase()
+        : 'U';
 
     return Container(
       decoration: BoxDecoration(
@@ -661,10 +670,9 @@ class _UserProfileDetailSheet extends StatelessWidget {
             width: 38,
             height: 5,
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurfaceVariant
-                  .withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -684,8 +692,9 @@ class _UserProfileDetailSheet extends StatelessWidget {
                 ),
                 child: CircleAvatar(
                   radius: 46,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
                   backgroundImage: user.profileImageLink.isNotEmpty
                       ? NetworkImage(user.profileImageLink)
                       : null,
@@ -695,9 +704,9 @@ class _UserProfileDetailSheet extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
                           ),
                         )
                       : null,
@@ -723,10 +732,7 @@ class _UserProfileDetailSheet extends StatelessWidget {
           // Full Name & Username
           Text(
             nameDisplay,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
@@ -743,16 +749,14 @@ class _UserProfileDetailSheet extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.4),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outlineVariant
-                    .withValues(alpha: 0.4),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.4),
               ),
             ),
             child: Column(
@@ -793,10 +797,9 @@ class _UserProfileDetailSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .primary
-                  .withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -904,12 +907,16 @@ class _UserProfileDetailSheet extends StatelessWidget {
                             Navigator.pop(context);
                           }
                         : null,
-                    icon: const Icon(Icons.check_circle_rounded,
-                        color: Colors.white),
+                    icon: const Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.white,
+                    ),
                     label: const Text(
                       'Accept Request',
                       style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.white),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),

@@ -22,7 +22,10 @@ class SocialDatasource {
         response.statusCode ?? 500,
       );
     } on DioException catch (e) {
-      final message = _extractErrorMessage(e, fallback: 'Failed to load people');
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to load people',
+      );
       throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
@@ -31,7 +34,22 @@ class SocialDatasource {
     try {
       await dio.post('/social/request/$targetUserId');
     } on DioException catch (e) {
-      final message = _extractErrorMessage(e, fallback: 'Failed to send friend request');
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to send friend request',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
+  Future<void> cancelFriendRequest(String relationId) async {
+    try {
+      await dio.post('/social/request/cancel/$relationId');
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to cancel friend request',
+      );
       throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
@@ -40,7 +58,10 @@ class SocialDatasource {
     try {
       await dio.put('/social/accept/$relationId');
     } on DioException catch (e) {
-      final message = _extractErrorMessage(e, fallback: 'Failed to accept friend request');
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to accept friend request',
+      );
       throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
@@ -49,7 +70,10 @@ class SocialDatasource {
     try {
       await dio.put('/social/decline/$relationId');
     } on DioException catch (e) {
-      final message = _extractErrorMessage(e, fallback: 'Failed to decline friend request');
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to decline friend request',
+      );
       throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
@@ -67,7 +91,10 @@ class SocialDatasource {
     try {
       await dio.post('/social/unblock/$targetUserId');
     } on DioException catch (e) {
-      final message = _extractErrorMessage(e, fallback: 'Failed to unblock user');
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to unblock user',
+      );
       throw AuthenticationException(message, e.response?.statusCode ?? 0);
     }
   }
@@ -78,7 +105,8 @@ class SocialDatasource {
         e.type == DioExceptionType.connectionError) {
       return 'Cannot connect to server. Please check your connection.';
     }
-    if (e.response?.data is Map && (e.response?.data as Map)['message'] != null) {
+    if (e.response?.data is Map &&
+        (e.response?.data as Map)['message'] != null) {
       return (e.response?.data as Map)['message'].toString();
     }
     return fallback;

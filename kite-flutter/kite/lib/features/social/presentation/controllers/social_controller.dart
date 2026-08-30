@@ -13,26 +13,26 @@ class SocialController extends ValueNotifier<SocialState> {
 
     try {
       final people = await _repository.getPeopleToConnect();
-      value = value.copyWith(
-        isLoading: false,
-        people: people,
-      );
+      value = value.copyWith(isLoading: false, people: people);
     } on AuthenticationException catch (e) {
-      value = value.copyWith(
-        isLoading: false,
-        errorMessage: e.message,
-      );
+      value = value.copyWith(isLoading: false, errorMessage: e.message);
     } catch (e) {
-      value = value.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
+      value = value.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 
   Future<void> sendFriendRequest(String targetUserId) async {
     try {
       await _repository.sendFriendRequest(targetUserId);
+      await fetchPeople();
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+    }
+  }
+
+  Future<void> cancelFriendRequest(String relationId) async {
+    try {
+      await _repository.cancelFriendRequest(relationId);
       await fetchPeople();
     } catch (e) {
       value = value.copyWith(errorMessage: e.toString());
