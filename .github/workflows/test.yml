@@ -41,22 +41,10 @@ jobs:
           cd kite-backend
           ./mvnw clean test
 
-      - name: Generate & Push JaCoCo Coverage Badges
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        id: jacoco
-        uses: cicirello/jacoco-badge-generator@v2
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          jacoco-csv-file: kite-backend/target/site/jacoco/jacoco.csv
-          badges-directory: .github/badges
-          generate-branches-badge: true
-          generate-summary: true
-
-      - name: Commit & Push Updated Badges
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !github.ref_protected
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: update jacoco coverage badges [skip ci]"
-          file_pattern: ".github/badges/*.svg"
+          files: kite-backend/target/site/jacoco/jacoco.xml
 
       - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v4
