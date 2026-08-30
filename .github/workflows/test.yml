@@ -52,7 +52,7 @@ jobs:
           generate-summary: true
 
       - name: Commit & Push Updated Badges
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !github.ref_protected
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update jacoco coverage badges [skip ci]"
