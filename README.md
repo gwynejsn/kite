@@ -1,8 +1,8 @@
 # Kite
 
 [![Test Backend](https://github.com/gwynejsn/kite/actions/workflows/test.yml/badge.svg)](https://github.com/gwynejsn/kite/actions/workflows/test.yml)
-![Coverage](https://raw.githubusercontent.com/gwynejsn/kite/badges/jacoco.svg)
-![Branches](https://raw.githubusercontent.com/gwynejsn/kite/badges/branches.svg)
+![Coverage](.github/badges/jacoco.svg)
+![Branches](.github/badges/branches.svg)
 
 An End-to-End Encrypted (E2EE) real-time messaging application demonstrating a Spring Modulith backend with Package-by-Feature architecture, RabbitMQ event externalization, and a Flutter cross-platform mobile client.
 
