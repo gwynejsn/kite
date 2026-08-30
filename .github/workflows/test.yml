@@ -51,6 +51,13 @@ jobs:
           generate-branches-badge: true
           generate-summary: true
 
+      - name: Commit & Push Updated Badges
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update jacoco coverage badges [skip ci]"
+          file_pattern: ".github/badges/*.svg"
+
       - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v4
         with:
