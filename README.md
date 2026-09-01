@@ -1,8 +1,9 @@
-# Kite
+# <img src="./docs/assets/images/kite.png" alt="icon" width="38" height="38" valign="middle" style="border-radius: 20%;"> Kite
 
 [![Test Backend](https://github.com/gwynejsn/kite/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/gwynejsn/kite/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/gwynejsn/kite/graph/badge.svg)](https://codecov.io/gh/gwynejsn/kite)
 
+</br>
 An End-to-End Encrypted (E2EE) real-time messaging application demonstrating a Spring Modulith backend with Package-by-Feature architecture, RabbitMQ event externalization, and a Flutter cross-platform mobile client.
 
 > **Note**
@@ -15,6 +16,7 @@ An End-to-End Encrypted (E2EE) real-time messaging application demonstrating a S
 
 ## Table of Contents
 
+- [App showcase](#app-showcase)
 - [Features](#features)
 - [Architecture & Tech Stack](#architecture--tech-stack)
 - [Project Structure](#project-structure)
@@ -30,6 +32,34 @@ An End-to-End Encrypted (E2EE) real-time messaging application demonstrating a S
 - [Contributing](#contributing)
 
 ---
+
+## App Showcase
+
+<h3 align="center">Authentication Flow</h3>
+<p align="center">
+  <img src="./docs/assets/images/onboarding.png" width="30%" alt="Onboarding Screen" />
+  <img src="./docs/assets/images/login.png" width="30%" alt="Login Screen" />
+  <img src="./docs/assets/images/sign_up.png" width="30%" alt="Sign Up Screen" />
+</p>
+
+<h3 align="center">Messaging & Social</h3>
+<p align="center">
+  <img src="./docs/assets/images/chats.png" width="30%" alt="Active Chats" />
+  <img src="./docs/assets/images/chat_1.png" width="30%" alt="Encrypted Messaging" />
+  <img src="./docs/assets/images/social_friends.png" width="30%" alt="Friends List" />
+</p>
+<table>
+  <tr>
+    <td width="40%" align="center">
+      <img src="./docs/assets/images/wingman.png" width="100%" alt="AI Wingman Screen" />
+    </td>
+    <td width="60%" valign="middle">
+      <h3>AI wingman</h3>
+      <h6>Your Personal Conversation Assistant</h3>
+      <p>Generates context-aware conversation starters, smart replies, and real-time advice to keep chats engaging using <i>LangChain4j.</i></p>
+    </td>
+  </tr>
+</table>
 
 ## Features
 

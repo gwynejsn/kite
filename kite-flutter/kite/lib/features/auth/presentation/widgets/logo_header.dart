@@ -7,33 +7,41 @@ class HeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.send_rounded,
-            size: 48,
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
-        ),
-        const SizedBox(height: 12),
+        // App Title - Larger KITE
         Text(
-          'Kite',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+          'KITE',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontSize: 48,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2.5,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.6),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
+
+        // Subtitle / Greeting
         Text(
           message,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: const Color(0xFFFFD200), // Vibrant yellow accent
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
         ),
       ],

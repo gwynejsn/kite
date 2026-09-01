@@ -1,4 +1,4 @@
-# Kite Project Documentation
+# <img src="./assets/images/kite.png" alt="icon" width="38" height="38" valign="middle" style="border-radius: 20%;"> Kite Project Documentation
 
 I created **Kite** to serve as a practical, production-style reference for building a modern **Spring Modulith** application using an enterprise-grade structure centered around **Package-by-Feature** and **Clean Architecture**.
 
@@ -7,6 +7,36 @@ While designing Kite, I wanted to address several core software engineering chal
 1. **Spring Modulith Architecture**: Demonstrating how a modular monolith can maintain strict domain boundaries using Spring Modulith modules (`conversation`, `social`, `media`, `profile`, `security`, `presence`) and internal application events without the operational complexity of distributed microservices.
 2. **Client-Side End-to-End Encryption (E2EE)**: Implementing zero-knowledge privacy where the mobile client applications bear full responsibility for encrypting and decrypting message text and binary media payloads before transmission.
 3. **Real-Time WebSockets & Event-Driven Signaling**: Showing how WebSockets (STOMP) integrate seamlessly with Spring Modulith's built-in application events to trigger real-time message delivery, inbox synchronization, and friend request notifications.
+
+---
+
+## App Showcase
+
+<h3 align="center">Authentication Flow</h3>
+<p align="center">
+  <img src="./assets/images/onboarding.png" width="30%" alt="Onboarding Screen" />
+  <img src="./assets/images/login.png" width="30%" alt="Login Screen" />
+  <img src="./assets/images/sign_up.png" width="30%" alt="Sign Up Screen" />
+</p>
+
+<h3 align="center">Messaging & Social</h3>
+<p align="center">
+  <img src="./assets/images/chats.png" width="30%" alt="Active Chats" />
+  <img src="./assets/images/chat_1.png" width="30%" alt="Encrypted Messaging" />
+  <img src="./assets/images/social_friends.png" width="30%" alt="Friends List" />
+</p>
+<table>
+  <tr>
+    <td width="40%" align="center">
+      <img src="./assets/images/wingman.png" width="100%" alt="AI Wingman Screen" />
+    </td>
+    <td width="60%" valign="middle">
+      <h3>AI wingman</h3>
+      <h6>Your Personal Conversation Assistant</h3>
+      <p>Generates context-aware conversation starters, smart replies, and real-time advice to keep chats engaging using <i>LangChain4j.</i></p>
+    </td>
+  </tr>
+</table>
 
 ---
 

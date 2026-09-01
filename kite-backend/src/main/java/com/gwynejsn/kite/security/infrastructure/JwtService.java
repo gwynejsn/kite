@@ -42,7 +42,12 @@ public class JwtService {
     }
 
     private Key getSignKey() {
-        byte[] keyBytes= Decoders.BASE64.decode(SECRET);
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64URL.decode(SECRET);
+        } catch (Exception e) {
+            keyBytes = SECRET.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
     public String extractEmail(String token) {
