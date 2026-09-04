@@ -1,23 +1,22 @@
 package com.gwynejsn.kite.security.infrastructure;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import com.gwynejsn.kite.security.infrastructure.exceptions.InvalidTokenException;
+import com.gwynejsn.kite.shared.domain.UserId;
+import com.gwynejsn.kite.shared.enums.Role;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
+import javax.crypto.SecretKey;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.*;
 
 @Component
+@Slf4j
 public class JwtService {
     @Value("${jwt.secret.key}")
     private String SECRET;
@@ -26,9 +25,14 @@ public class JwtService {
     @Value("${jwt.token.expiration}")
     private long EXPIRATION_IN_MINUTES;
 
-    public String generateToken(String email) {
+    public String generateToken(String email, UserId userId, Set<Role> roles) {
         Map<String, Object> claims = new HashMap<>();
-
+        // we are putting the roles and userId in the JWT
+        // to avoid calling the db everytime we validate just to get user details
+        claims.put("roles", roles);
+        if (userId != null) {
+            claims.put("userId", userId.id().toString());
+        }
         return createToken(claims, email);
     }
 
@@ -41,7 +45,7 @@ public class JwtService {
                 .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
     }
 
-    private Key getSignKey() {
+    private SecretKey getSignKey() {
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64URL.decode(SECRET);
@@ -50,34 +54,23 @@ public class JwtService {
         }
         return Keys.hmacShaKeyFor(keyBytes);
     }
-    public String extractEmail(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
 
-    public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+    public Claims validateToken(String token) throws InvalidTokenException, JwtException {
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSignKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException ex) {
+            log.info("Expired JWT token");
+            throw new InvalidTokenException("Expired JWT token");
+        } catch (SignatureException ex) {
+            log.info("Token is invalid/tampered!");
+            throw new InvalidTokenException("Token is invalid/tampered!");
+        } catch (JwtException ex) {
+            log.info("Invalid JWT token");
+            throw new InvalidTokenException("Invalid JWT token");
+        }
     }
-
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-    private Claims extractAllClaims(String token) {
-        return Jwts
-                .parser()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
-    private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String email = extractEmail(token);
-        return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
-    }
-
 }
