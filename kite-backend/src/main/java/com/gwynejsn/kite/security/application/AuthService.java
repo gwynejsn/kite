@@ -10,23 +10,29 @@ import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.domain.events.UserLoginEvent;
 import com.gwynejsn.kite.security.domain.events.UserLogoutEvent;
 import com.gwynejsn.kite.security.domain.events.UserRegisteredEvent;
+import com.gwynejsn.kite.security.infrastructure.CustomUserDetails;
 import com.gwynejsn.kite.security.infrastructure.JwtService;
 import com.gwynejsn.kite.security.infrastructure.UserRepo;
+import com.gwynejsn.kite.security.infrastructure.exceptions.InvalidTokenException;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.enums.Role;
 import com.gwynejsn.kite.shared.exceptions.UserNotFoundException;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -42,18 +48,16 @@ public class AuthService {
     @Transactional
     public LoginUserResponse loginUser(LoginUserRequest loginUserRequest) throws UserNotFoundException, AuthenticationException {
         log.info("Login user request: {}", loginUserRequest);
-        authenticationManager.authenticate(
+        Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginUserRequest.email(),
                         loginUserRequest.password()
                 )
         );
-        User user = userRepo
-                .findUserByEmail(loginUserRequest.email())
-                .orElseThrow(() -> new UserNotFoundException(loginUserRequest.email() + " not found."));
+        User user = ((CustomUserDetails) auth.getPrincipal()).user();
 
         log.info("Logged in user: {}", user);
-        String jwtToken = jwtService.generateToken(user.getEmail());
+        String jwtToken = jwtService.generateToken(user.getEmail(), user.getId(), user.getRoles());
         GeneratedRefreshToken generatedRefreshToken = refreshTokenService.generateRefreshToken(user.getId());
         eventPublisher.publishEvent(
                 UserLoginEvent
@@ -93,7 +97,7 @@ public class AuthService {
                 .profileImageLink(user.profileImageLink())
                 .build()
         );
-        return jwtService.generateToken(userCreated.getEmail());
+        return jwtService.generateToken(userCreated.getEmail(), userCreated.getId(), userCreated.getRoles());
     }
 
     @Transactional
@@ -111,7 +115,45 @@ public class AuthService {
         GeneratedRefreshToken rotated = refreshTokenService.rotateRefreshToken(refreshToken);
         User user = userRepo.findUserById(rotated.entity().getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found for session"));
-        String newJwtToken = jwtService.generateToken(user.getEmail());
+        String newJwtToken = jwtService.generateToken(user.getEmail(), user.getId(), user.getRoles());
         return RefreshTokenResponse.builder().token(newJwtToken).refreshToken(rotated.rawToken()).build();
+    }
+
+    public UsernamePasswordAuthenticationToken getUsernamePasswordAuthenticationToken(
+            Claims claims
+    ) {
+        String email = claims.getSubject();
+        String userIdStr = claims.get("userId", String.class);
+        if (userIdStr == null) {
+            throw new InvalidTokenException("Token missing userId claim. Please log in again.");
+        }
+        // extract the userId
+        if (userIdStr.startsWith("UserId[id=") && userIdStr.endsWith("]")) {
+            userIdStr = userIdStr.substring(10, userIdStr.length() - 1);
+        }
+        UserId userId = new UserId(UUID.fromString(userIdStr));
+        // extract the roles
+        List<?> rawRoles = claims.get("roles", List.class);
+        Set<Role> roles = rawRoles == null ? Set.of() :
+                rawRoles.stream()
+                        .map(Object::toString)
+                        .map(Role::valueOf)
+                        .collect(java.util.stream.Collectors.toSet());
+
+        CustomUserDetails principal = CustomUserDetails.builder().user(
+                User
+                        .builder()
+                        .email(email)
+                        .id(userId)
+                        .roles(roles)
+                        .build()
+        ).build();
+
+
+        return new UsernamePasswordAuthenticationToken(
+                        principal,
+                        null,
+                        principal.getAuthorities()
+                );
     }
 }

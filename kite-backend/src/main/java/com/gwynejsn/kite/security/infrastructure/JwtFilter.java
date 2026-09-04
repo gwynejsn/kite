@@ -1,11 +1,16 @@
 package com.gwynejsn.kite.security.infrastructure;
 
+import com.gwynejsn.kite.security.application.AuthService;
+import com.gwynejsn.kite.security.domain.User;
 import com.gwynejsn.kite.security.infrastructure.exceptions.InvalidTokenException;
+import com.gwynejsn.kite.shared.enums.Role;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,7 +23,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import com.gwynejsn.kite.shared.domain.UserId;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import java.io.IOException;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -27,17 +36,14 @@ public class JwtFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
     private final HandlerExceptionResolver resolver;
+    private final AuthService authService;
 
-    public JwtFilter(
-            JwtService jwtService,
-            UserDetailsService userDetailsService,
-            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver
-    ) {
-        this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
+    // didn't use requiredArgs here because using lombok with qualifier has some problems
+    public JwtFilter(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver, JwtService jwtService, AuthService authService) {
         this.resolver = resolver;
+        this.jwtService = jwtService;
+        this.authService = authService;
     }
 
     @Override
@@ -56,25 +62,16 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = authorizationHeader.substring(BEARER_PREFIX.length());
 
         try {
-            String email = jwtService.extractEmail(token);
+            Claims claims = jwtService.validateToken(token);
+            if (claims != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UsernamePasswordAuthenticationToken authToken =
+                        authService.getUsernamePasswordAuthenticationToken(claims);
 
-            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-                if (jwtService.validateToken(token, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                } else {
-                    log.error("Invalid JWT token details for user {}", email);
-                    resolver.resolveException(request, response, null, new InvalidTokenException("Invalid token!"));
-                    return;
-                }
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } catch (JwtException | UsernameNotFoundException | IllegalArgumentException ex) {
-            log.error("JWT verification failed: {}", ex.getMessage());
-            resolver.resolveException(request, response, null, new InvalidTokenException("Invalid or corrupted JWT token: " + ex.getMessage()));
+        } catch (InvalidTokenException | JwtException | IllegalArgumentException ex) {
+            resolver.resolveException(request, response, null, ex);
             return;
         }
 
