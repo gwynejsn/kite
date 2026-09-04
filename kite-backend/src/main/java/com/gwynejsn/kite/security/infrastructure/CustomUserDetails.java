@@ -16,7 +16,7 @@ import java.util.Set;
 public record CustomUserDetails(User user) implements AuthenticatedUser {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        Set<Role> activeRoles = user.getRoles() != null ? user.getRoles() : (user != null ? user.getRoles() : Set.of());
+        Set<Role> activeRoles = (user != null && user.getRoles() != null) ? user.getRoles() : Set.of();
         return activeRoles.stream()
                 .map(Role::toString)
                 .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
@@ -26,21 +26,21 @@ public record CustomUserDetails(User user) implements AuthenticatedUser {
 
     @Override
     public @Nullable String getPassword() {
-        return user.getPassword() != null ? user.getPassword() : (user != null ? user.getPassword() : null);
+        return user != null ? user.getPassword() : null;
     }
 
     @Override
     public String getUsername() { // note email is the username here
-        return user.getEmail() != null ? user.getEmail() : (user != null ? user.getEmail() : null);
+        return user != null ? user.getEmail() : null;
     }
 
     @Override
     public boolean isEnabled() {
-        return user != null ? user.isEnabled() : user.isEnabled();
+        return user != null && user.isEnabled();
     }
 
     @Override
     public UserId getUserId() {
-        return user.getId() != null ? user.getId() : (user != null ? user.getId() : null);
+        return user != null ? user.getId() : null;
     }
 }

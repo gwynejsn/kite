@@ -126,3 +126,143 @@ Even if an unauthorized third party obtains the media download link, they receiv
 * **Hardware-Backed Storage**: Keys are stored using `Flutter Secure Storage`:
   * **iOS**: Encrypted inside the iOS Keychain with `kSecAttrAccessibleAfterFirstUnlock`.
   * **Android**: Encrypted using the hardware-backed Android KeyStore system.
+
+---
+
+---
+
+## 6. Backend Authentication & Security Architecture
+
+> **Overview**: Kite uses a **stateless JWT architecture** combined with **MongoDB-backed refresh token rotation** and **STOMP WebSocket channel security**. The server never keeps HTTP sessions (`JSESSIONID`). Instead, every request is self-authenticated via cryptographically signed tokens.
+
+---
+
+### Act I: The Security Team (Component Roles)
+
+Think of the security system as a coordinated team where each class plays a specific role:
+
+```
+[ Incoming Request ] ──► [ SecurityConfig ] ──► [ JwtFilter ] ──► [ SecurityContextHolder ]
+                                                     │                     (CustomUserDetails)
+                                            (Validates Signature)
+```
+
+* **`SecurityConfig` (The Rule Book)**: Defines which doors are open to everyone (`/auth/login`, `/auth/sign-up`, `/ws-connect`) and which require a badge. It forces the server to run statelessly (`SessionCreationPolicy.STATELESS`).
+* **`JwtFilter` (The Checkpoint Guard)**: Stands at the entrance of every HTTP request. It inspects the `Authorization: Bearer <token>` header, verifies its digital signature, and attaches the user's identity badge to the current request.
+* **`CustomUserDetails` (The User Identity Badge)**: A lightweight Java record wrapping user identity (`userId`, `email`, `roles`). It is injected directly into controllers via `@AuthenticationPrincipal CustomUserDetails`.
+* **`JwtService` (The Pass Issuer)**: Mints and verifies HMAC-SHA256 digital JWT access tokens containing `email`, `userId`, and `roles`.
+* **`RefreshTokenService` (The Session Manager)**: Handles long-lived refresh tokens stored in MongoDB, ensuring tokens can be revoked or rotated when expired.
+* **`WebSocketAuthInterceptor` (The Live Chat Gatekeeper)**: Authenticates real-time STOMP WebSocket connections before users can subscribe to or send live messages.
+* **`AsyncConfig` (The Task Dispatcher)**: Manages a dedicated background thread pool (`taskExecutor`) so event tasks (like updating online presence) run smoothly without blocking user requests.
+
+---
+
+### Act II: How a User Logins (`POST /auth/login`)
+
+When a user opens the app and logs in with their email and password, the request travels through a two-step verification and token issuance process:
+
+#### Step 1: Credential Verification
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client
+    participant AuthManager as ProviderManager
+    participant DaoProvider as DaoAuthenticationProvider
+    participant UserDetails as UserDetailsServiceImp
+    participant Encoder as BCryptPasswordEncoder
+
+    Client->>AuthManager: 1. Submit email & password
+    AuthManager->>DaoProvider: 2. Delegate to DaoAuthenticationProvider
+    DaoProvider->>UserDetails: 3. Fetch user by email from MongoDB
+    UserDetails-->>DaoProvider: 4. Return CustomUserDetails(user)
+    DaoProvider->>Encoder: 5. Compare raw password with BCrypt hash
+    Encoder-->>DaoProvider: 6. Password match confirmed!
+    DaoProvider-->>AuthManager: 7. Return Authenticated Token (CustomUserDetails)
+```
+
+1. **Submitting Credentials**: The client sends `POST /auth/login` with `{ "email": "alice@example.com", "password": "secretpassword" }`.
+2. **Provider Delegation**: `AuthService` passes an unauthenticated token to `AuthenticationManager` (`ProviderManager`), which hands it over to `DaoAuthenticationProvider`.
+3. **Fetching User Record**: `DaoAuthenticationProvider` calls `UserDetailsServiceImp`, which queries MongoDB (`userRepo.findUserByEmail`) and wraps the account in `CustomUserDetails`.
+4. **Password Hashing Check**: `DaoAuthenticationProvider` calls `BCryptPasswordEncoder.matches()`. If the password matches the stored BCrypt hash, authentication succeeds!
+
+#### Step 2: Token Generation & Online Status
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Service as AuthService
+    participant Jwt as JwtService
+    participant RefreshToken as RefreshTokenService
+    actor Client
+
+    Service->>Jwt: 1. Generate JWT Access Token (email, userId, roles)
+    Jwt-->>Service: 2. Signed JWT Token String
+    Service->>RefreshToken: 3. Generate & Save Refresh Token in MongoDB
+    RefreshToken-->>Service: 4. Raw Refresh Token String
+    Service-->>Client: 5. Return 200 OK (Access Token + Refresh Token)
+```
+
+5. **Minting Tokens**: `AuthService` calls `JwtService` to build a signed access token containing `email`, `userId`, and `roles`. It also calls `RefreshTokenService` to save a new refresh token in MongoDB.
+6. **Going Online**: A `UserLoginEvent` is published asynchronously, triggering `UserPresenceEventListener` on a background thread (`kite-async-*`) to update the user's presence status to `ONLINE`.
+7. **Response**: The client receives a `200 OK` response containing both tokens.
+
+---
+
+### Act III: Accessing API Endpoints (`JwtFilter`)
+
+Once logged in, the client attaches the JWT access token to every HTTP request header: `Authorization: Bearer <jwt-token>`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client
+    participant Filter as JwtFilter
+    participant Jwt as JwtService
+    participant SecurityContext as SecurityContextHolder
+    participant Controller as ConversationController
+
+    Client->>Filter: 1. Request GET /conversation/all (Header: Bearer <token>)
+    Filter->>Jwt: 2. Validate token signature & expiration
+    Jwt-->>Filter: 3. Valid Claims (email, userId, roles)
+    Filter->>Filter: 4. Construct CustomUserDetails(user) statelessly
+    Filter->>SecurityContext: 5. Store authentication principal in ThreadLocal
+    Filter->>Controller: 6. Proceed to endpoint
+    Controller-->>Client: 7. 200 OK (Injects @AuthenticationPrincipal CustomUserDetails)
+```
+
+1. **Intercepting the Request**: `JwtFilter` inspects the `Authorization` header. If missing, public routes continue through the filter chain, while protected routes are stopped.
+2. **Stateless Signature Check**: `JwtService` verifies the HMAC-SHA256 signature using the server secret key **without querying MongoDB**.
+3. **Reconstructing the Badge**: Extracts `email`, `userId`, and `roles` from token claims and builds a transient `CustomUserDetails` principal.
+4. **Binding Identity**: Binds the authenticated token into `SecurityContextHolder` for the current thread.
+5. **Controller Access**: The controller receives `@AuthenticationPrincipal CustomUserDetails authenticatedUser` directly as a parameter and safely calls `authenticatedUser.getUserId()`.
+
+---
+
+### Act IV: Connecting to Live Chat (WebSocket STOMP Security)
+
+Real-time chat requires a WebSocket connection (`/ws-connect`):
+
+1. **Connecting**: The Flutter client sends a STOMP `CONNECT` frame containing header `Authorization: Bearer <jwt-token>`.
+2. **Interception**: `WebSocketAuthInterceptor` intercepts the frame in `preSend()`.
+3. **Verification**: Validates the JWT token statelessly, builds `CustomUserDetails`, and attaches it to the WebSocket session context (`accessor.setUser(authToken)`).
+4. **Live Messaging**: All future STOMP `SEND` and `SUBSCRIBE` messages in that socket session inherit this authenticated principal.
+
+---
+
+### Act V: Token Refresh & Logout
+
+#### Refresh Token Rotation (`POST /auth/refresh`)
+1. When the access token expires (HTTP 401), the client sends `{ "refreshToken": "<token>" }`.
+2. `RefreshTokenService` checks MongoDB:
+   * Revokes the old refresh token.
+   * Generates and stores a **new** refresh token in MongoDB (Token Rotation).
+3. `JwtService` issues a new access token.
+4. Both new tokens are returned to the client.
+
+#### Logout (`POST /auth/logout`)
+1. Client sends a logout request with their refresh token.
+2. `RefreshTokenService` marks the refresh token as revoked in MongoDB.
+3. A `UserLogoutEvent` is published, updating the user's presence status to `OFFLINE`.
+4. Returns `204 No Content`.
+
+
+
