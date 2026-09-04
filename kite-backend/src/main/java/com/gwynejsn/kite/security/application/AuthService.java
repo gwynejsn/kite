@@ -54,7 +54,7 @@ public class AuthService {
                         loginUserRequest.password()
                 )
         );
-        User user = ((CustomUserDetails) auth.getPrincipal()).getUser();
+        User user = ((CustomUserDetails) auth.getPrincipal()).user();
 
         log.info("Logged in user: {}", user);
         String jwtToken = jwtService.generateToken(user.getEmail(), user.getId(), user.getRoles());
@@ -140,11 +140,14 @@ public class AuthService {
                         .map(Role::valueOf)
                         .collect(java.util.stream.Collectors.toSet());
 
-        CustomUserDetails principal = CustomUserDetails.builder()
-                .userId(userId)
-                .email(email)
-                .roles(roles)
-                .build();
+        CustomUserDetails principal = CustomUserDetails.builder().user(
+                User
+                        .builder()
+                        .email(email)
+                        .id(userId)
+                        .roles(roles)
+                        .build()
+        ).build();
 
 
         return new UsernamePasswordAuthenticationToken(
