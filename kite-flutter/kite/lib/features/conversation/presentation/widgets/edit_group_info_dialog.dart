@@ -31,16 +31,18 @@ class _EditGroupInfoDialogState extends State<EditGroupInfoDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _photoController;
+  final ImagePicker _picker = ImagePicker();
 
   bool _isSaving = false;
-  bool _isUploading = false;
+  bool _isUploadingImage = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.conversation.name ?? '');
-    _photoController =
-        TextEditingController(text: widget.conversation.conversationPhoto ?? '');
+    _nameController =
+        TextEditingController(text: widget.conversation.name ?? '');
+    _photoController = TextEditingController(
+        text: widget.conversation.conversationPhoto ?? '');
     _photoController.addListener(() {
       setState(() {});
     });
@@ -55,22 +57,27 @@ class _EditGroupInfoDialogState extends State<EditGroupInfoDialog> {
 
   Future<void> _pickAndUploadImage(ImageSource source) async {
     try {
-      final mediaRepo = sl<MediaRepository>();
-      final pickResult = await mediaRepo.pickImage(source);
-      if (pickResult == null) return;
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 600,
+        maxHeight: 600,
+        imageQuality: 80,
+      );
+      if (image == null) return;
 
-      setState(() => _isUploading = true);
+      setState(() => _isUploadingImage = true);
 
-      final uploadedUrl = await mediaRepo.uploadUnencryptedMedia(
-        rawBytes: pickResult.rawBytes,
-        fileName: pickResult.fileName,
+      final bytes = await image.readAsBytes();
+      final imageUrl = await sl<MediaRepository>().uploadUnencryptedMedia(
+        rawBytes: bytes,
+        fileName: image.name,
       );
 
+      setState(() {
+        _photoController.text = imageUrl;
+      });
+
       if (mounted) {
-        setState(() {
-          _photoController.text = uploadedUrl;
-          _isUploading = false;
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Group photo uploaded successfully!'),
@@ -79,61 +86,67 @@ class _EditGroupInfoDialogState extends State<EditGroupInfoDialog> {
         );
       }
     } catch (e) {
+      debugPrint('Error uploading group photo: $e');
       if (mounted) {
-        setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload image: ${e.toString()}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
+          const SnackBar(
+            content: Text('Failed to upload group photo'),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
     }
   }
 
-  void _showImageSourcePicker() {
+  void _showImagePickerModal() {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_rounded),
-              title: const Text('Take Photo'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickAndUploadImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded),
-              title: const Text('Choose from Gallery'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickAndUploadImage(ImageSource.gallery);
-              },
-            ),
-            if (_photoController.text.isNotEmpty)
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
               ListTile(
-                leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                title: const Text(
-                  'Remove Photo',
-                  style: TextStyle(color: Colors.red),
-                ),
+                leading:
+                    const Icon(Icons.photo_library_rounded, color: Colors.blue),
+                title: const Text('Choose from Gallery'),
                 onTap: () {
-                  Navigator.pop(ctx);
-                  setState(() {
-                    _photoController.clear();
-                  });
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.gallery);
                 },
               ),
-          ],
-        ),
-      ),
+              ListTile(
+                leading:
+                    const Icon(Icons.camera_alt_rounded, color: Colors.green),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.camera);
+                },
+              ),
+              if (_photoController.text.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.red),
+                  title: const Text(
+                    'Remove Photo',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _photoController.clear();
+                    });
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -189,53 +202,71 @@ class _EditGroupInfoDialogState extends State<EditGroupInfoDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              // Photo Avatar with Edit Badge
+              // Avatar Preview & Camera Button (matching Profile Page style)
               Center(
-                child: GestureDetector(
-                  onTap: (_isSaving || _isUploading) ? null : _showImageSourcePicker,
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 42,
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                        backgroundImage:
-                            photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-                        child: _isUploading
-                            ? const CircularProgressIndicator()
-                            : (photoUrl.isEmpty
-                                ? Icon(
-                                    Icons.group_rounded,
-                                    size: 42,
-                                    color: theme.colorScheme.onPrimaryContainer,
-                                  )
-                                : null),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: CircleAvatar(
-                          radius: 14,
-                          backgroundColor: theme.colorScheme.primary,
-                          child: Icon(
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 46,
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      backgroundImage:
+                          photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                      child: _isUploadingImage
+                          ? const CircularProgressIndicator()
+                          : (photoUrl.isEmpty
+                              ? Icon(
+                                  Icons.group_rounded,
+                                  size: 48,
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                )
+                              : null),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: InkWell(
+                        onTap: (_isSaving || _isUploadingImage)
+                            ? null
+                            : _showImagePickerModal,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: theme.colorScheme.surface,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
                             Icons.camera_alt_rounded,
-                            size: 14,
-                            color: theme.colorScheme.onPrimary,
+                            size: 18,
+                            color: Colors.white,
                           ),
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Center(
+                child: TextButton(
+                  onPressed: (_isSaving || _isUploadingImage)
+                      ? null
+                      : _showImagePickerModal,
+                  child: Text(
+                    _isUploadingImage
+                        ? 'Uploading...'
+                        : (photoUrl.isNotEmpty
+                            ? 'Change Group Photo'
+                            : 'Upload Group Photo'),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed:
-                    (_isSaving || _isUploading) ? null : _showImageSourcePicker,
-                icon: const Icon(Icons.image_rounded, size: 16),
-                label: const Text('Change Photo'),
-              ),
               const SizedBox(height: 16),
-              // Group Name input
+              // Group Name Input
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
@@ -254,38 +285,19 @@ class _EditGroupInfoDialogState extends State<EditGroupInfoDialog> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              // Group Cover Photo URL input
-              TextFormField(
-                controller: _photoController,
-                decoration: InputDecoration(
-                  labelText: 'Photo URL (Optional)',
-                  hintText: 'https://example.com/photo.jpg',
-                  prefixIcon: const Icon(Icons.link_rounded),
-                  suffixIcon: photoUrl.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
-                          onPressed: () => _photoController.clear(),
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: (_isSaving || _isUploading)
+          onPressed: (_isSaving || _isUploadingImage)
               ? null
               : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: (_isSaving || _isUploading) ? null : _handleSave,
+          onPressed: (_isSaving || _isUploadingImage) ? null : _handleSave,
           child: _isSaving
               ? const SizedBox(
                   width: 16,
