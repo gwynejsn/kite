@@ -26,6 +26,12 @@ abstract interface class ConversationRepository {
     Map<String, String>? groupKeyMap,
   });
 
+  Future<Conversation> updateGroupConversationInfo({
+    required String conversationId,
+    String? groupName,
+    String? conversationPhoto,
+  });
+
   Future<Conversation> addMembers({
     required String conversationId,
     required List<String> memberIds,

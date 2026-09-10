@@ -115,6 +115,19 @@ class ConversationRepositoryImpl implements ConversationRepository {
   }
 
   @override
+  Future<Conversation> updateGroupConversationInfo({
+    required String conversationId,
+    String? groupName,
+    String? conversationPhoto,
+  }) {
+    return remoteDatasource.updateGroupConversationInfo(
+      conversationId: conversationId,
+      groupName: groupName,
+      conversationPhoto: conversationPhoto,
+    );
+  }
+
+  @override
   Future<Conversation> addMembers({
     required String conversationId,
     required List<String> memberIds,

@@ -115,6 +115,29 @@ class ConversationController extends ValueNotifier<ConversationState> {
     }
   }
 
+  Future<Conversation?> updateGroupConversationInfo({
+    required String conversationId,
+    String? groupName,
+    String? conversationPhoto,
+  }) async {
+    try {
+      final updatedConv = await _repository.updateGroupConversationInfo(
+        conversationId: conversationId,
+        groupName: groupName,
+        conversationPhoto: conversationPhoto,
+      );
+
+      _onRealtimeConversationUpdate(updatedConv);
+      return updatedConv;
+    } on AuthenticationException catch (e) {
+      value = value.copyWith(errorMessage: e.message);
+      rethrow;
+    } catch (e) {
+      value = value.copyWith(errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
   Future<Conversation?> addMembersToGroup({
     required String conversationId,
     required List<String> memberIds,

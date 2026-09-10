@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kite/features/conversation/domain/conversation.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/screens/conversation_room_page.dart';
+import 'package:kite/features/media/domain/repositories/media_repository.dart';
 import 'package:kite/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kite/features/social/domain/repositories/social_repository.dart';
 import 'package:kite/features/social/domain/user_discovery.dart';
@@ -21,6 +23,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _photoController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
 
   final Set<String> _selectedMemberIds = {};
   final Set<String> _selectedAdminIds = {};
@@ -29,11 +32,15 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   List<UserDiscovery> _friends = [];
   bool _isLoadingFriends = true;
   bool _isSubmitting = false;
+  bool _isUploadingImage = false;
   String? _friendsError;
 
   @override
   void initState() {
     super.initState();
+    _photoController.addListener(() {
+      setState(() {});
+    });
     _loadFriends();
   }
 
@@ -95,6 +102,100 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         _selectedAdminIds.add(userId);
       }
     });
+  }
+
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 600,
+        maxHeight: 600,
+        imageQuality: 80,
+      );
+      if (image == null) return;
+
+      setState(() => _isUploadingImage = true);
+
+      final bytes = await image.readAsBytes();
+      final imageUrl = await sl<MediaRepository>().uploadUnencryptedMedia(
+        rawBytes: bytes,
+        fileName: image.name,
+      );
+
+      if (mounted) {
+        setState(() {
+          _photoController.text = imageUrl;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Group photo uploaded successfully!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error uploading group photo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload group photo'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
+  void _showImagePickerModal() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading:
+                    const Icon(Icons.photo_library_rounded, color: Colors.blue),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading:
+                    const Icon(Icons.camera_alt_rounded, color: Colors.green),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.camera);
+                },
+              ),
+              if (_photoController.text.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.red),
+                  title: const Text(
+                    'Remove Photo',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _photoController.clear();
+                    });
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _handleCreateGroup() async {
@@ -206,7 +307,9 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         ),
         actions: [
           TextButton(
-            onPressed: _isSubmitting ? null : _handleCreateGroup,
+            onPressed: (_isSubmitting || _isUploadingImage)
+                ? null
+                : _handleCreateGroup,
             child: _isSubmitting
                 ? const SizedBox(
                     width: 18,
@@ -233,22 +336,63 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
             Container(
               padding: const EdgeInsets.all(16.0),
               color: theme.colorScheme.surfaceContainerLow,
-              child: Column(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
+                  // Avatar Preview & Upload Button
+                  Stack(
                     children: [
                       CircleAvatar(
-                        radius: 28,
+                        radius: 34,
                         backgroundColor: theme.colorScheme.primaryContainer,
-                        child: Icon(
-                          Icons.group_rounded,
-                          size: 32,
-                          color: theme.colorScheme.onPrimaryContainer,
+                        backgroundImage: _photoController.text.isNotEmpty
+                            ? NetworkImage(_photoController.text)
+                            : null,
+                        child: _isUploadingImage
+                            ? const CircularProgressIndicator()
+                            : (_photoController.text.isEmpty
+                                ? Icon(
+                                    Icons.group_rounded,
+                                    size: 34,
+                                    color:
+                                        theme.colorScheme.onPrimaryContainer,
+                                  )
+                                : null),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: InkWell(
+                          onTap: (_isSubmitting || _isUploadingImage)
+                              ? null
+                              : _showImagePickerModal,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: theme.colorScheme.surface,
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
                           controller: _nameController,
                           textCapitalization: TextCapitalization.words,
                           decoration: InputDecoration(
@@ -269,23 +413,31 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                             return null;
                           },
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _photoController,
-                    decoration: InputDecoration(
-                      labelText: 'Group Cover Photo URL (Optional)',
-                      hintText: 'https://example.com/photo.jpg',
-                      prefixIcon: const Icon(Icons.image_outlined),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                        const SizedBox(height: 4),
+                        TextButton.icon(
+                          onPressed: (_isSubmitting || _isUploadingImage)
+                              ? null
+                              : _showImagePickerModal,
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                          ),
+                          icon: Icon(
+                            _photoController.text.isNotEmpty
+                                ? Icons.edit_rounded
+                                : Icons.add_a_photo_rounded,
+                            size: 16,
+                          ),
+                          label: Text(
+                            _isUploadingImage
+                                ? 'Uploading...'
+                                : (_photoController.text.isNotEmpty
+                                    ? 'Change group photo'
+                                    : 'Upload group photo'),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
