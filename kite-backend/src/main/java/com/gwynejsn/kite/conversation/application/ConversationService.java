@@ -4,6 +4,7 @@ import com.gwynejsn.kite.conversation.api.ConversationServiceApi;
 import com.gwynejsn.kite.conversation.application.dto.ConversationResponse;
 import com.gwynejsn.kite.conversation.application.dto.CreateGroupConversationRequest;
 import com.gwynejsn.kite.conversation.application.dto.MemberProfileResponse;
+import com.gwynejsn.kite.conversation.application.dto.UpdateGroupConversationInfoRequest;
 import com.gwynejsn.kite.conversation.application.exceptions.ConversationAlreadyExistsException;
 import com.gwynejsn.kite.conversation.application.exceptions.UserIsNotAnAdminException;
 import com.gwynejsn.kite.conversation.domain.Conversation;
@@ -54,11 +55,16 @@ public class ConversationService implements ConversationServiceApi {
                 .toList();
     }
 
-    public ConversationResponse getConversationForUser(ConversationId conversationId, UserId currentUserId) {
-        Conversation conversation = conversationRepo
-                .findConversationById(conversationId)
-                .orElseThrow(() -> new ConversationNotFoundException(conversationId.id().toString()));
-        return mapToResponse(conversation, currentUserId);
+    public ConversationResponse updateGroupConversationInfo(UpdateGroupConversationInfoRequest updateGroup, UserId currentId) {
+        Conversation conversation = validateMember(new ConversationId(updateGroup.conversationId()), currentId);
+        if (updateGroup.groupName() != null && !updateGroup.groupName().isEmpty()) {
+            conversation.setName(updateGroup.groupName());
+        }
+        if (updateGroup.conversationPhoto() != null && !updateGroup.conversationPhoto().isEmpty()) {
+            conversation.setConversationPhoto(updateGroup.conversationPhoto());
+        }
+        updateConversation(conversation);
+        return INSTANCE.toConversationResponse(conversation);
     }
 
     public void updateConversation(Conversation conversation) {

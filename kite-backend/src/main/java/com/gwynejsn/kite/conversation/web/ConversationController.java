@@ -3,7 +3,6 @@ package com.gwynejsn.kite.conversation.web;
 import com.gwynejsn.kite.conversation.application.ConversationService;
 import com.gwynejsn.kite.conversation.application.MessageService;
 import com.gwynejsn.kite.conversation.application.dto.*;
-import com.gwynejsn.kite.conversation.domain.Conversation;
 import com.gwynejsn.kite.shared.domain.ConversationId;
 import com.gwynejsn.kite.shared.domain.UserId;
 import com.gwynejsn.kite.shared.security.AuthenticatedUser;
@@ -74,6 +73,13 @@ public class ConversationController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
         ConversationResponse response = conversationService.createGroupConversation(createGroupConversationRequest, authenticatedUser.getUserId());
+        broadcastGroupConversationUpdate(response);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/group/info/update")
+    public ResponseEntity<ConversationResponse> updateGroupConversationInfo(@RequestBody UpdateGroupConversationInfoRequest updateGroup, @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        ConversationResponse response = conversationService.updateGroupConversationInfo(updateGroup, authenticatedUser.getUserId());
         broadcastGroupConversationUpdate(response);
         return ResponseEntity.ok(response);
     }
