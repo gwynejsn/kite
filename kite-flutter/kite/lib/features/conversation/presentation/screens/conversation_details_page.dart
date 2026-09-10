@@ -4,6 +4,7 @@ import 'package:kite/features/conversation/domain/conversation_type.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_controller.dart';
 import 'package:kite/features/conversation/presentation/controllers/conversation_state.dart';
 import 'package:kite/features/conversation/presentation/widgets/add_members_dialog.dart';
+import 'package:kite/features/conversation/presentation/widgets/edit_group_info_dialog.dart';
 import 'package:kite/features/conversation/presentation/widgets/info_section_tile.dart';
 import 'package:kite/features/conversation/presentation/widgets/member_tile.dart';
 import 'package:kite/features/presence/presentation/presence_provider.dart';
@@ -245,6 +246,17 @@ class _ConversationDetailsPageState extends State<ConversationDetailsPage> {
           appBar: AppBar(
             title: const Text('Details'),
             centerTitle: true,
+            actions: [
+              if (isGroup)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Edit Group Info',
+                  onPressed: () => EditGroupInfoDialog.show(
+                    context,
+                    conversation: currentConv,
+                  ),
+                ),
+            ],
           ),
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -255,52 +267,100 @@ class _ConversationDetailsPageState extends State<ConversationDetailsPage> {
               Center(
                 child: Column(
                   children: [
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 46,
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          backgroundImage:
-                              (photoUrl != null && photoUrl.isNotEmpty)
-                                  ? NetworkImage(photoUrl)
-                                  : null,
-                          child: (photoUrl == null || photoUrl.isEmpty)
-                              ? Icon(
-                                  isGroup
-                                      ? Icons.group_rounded
-                                      : Icons.person_rounded,
-                                  size: 46,
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                )
-                              : null,
-                        ),
-                        if (liveIsOnline)
-                          Positioned(
-                            right: 4,
-                            bottom: 4,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: theme.colorScheme.surface,
-                                  width: 2.5,
+                    GestureDetector(
+                      onTap: isGroup
+                          ? () => EditGroupInfoDialog.show(
+                                context,
+                                conversation: currentConv,
+                              )
+                          : null,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 46,
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            backgroundImage:
+                                (photoUrl != null && photoUrl.isNotEmpty)
+                                    ? NetworkImage(photoUrl)
+                                    : null,
+                            child: (photoUrl == null || photoUrl.isEmpty)
+                                ? Icon(
+                                    isGroup
+                                        ? Icons.group_rounded
+                                        : Icons.person_rounded,
+                                    size: 46,
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                  )
+                                : null,
+                          ),
+                          if (isGroup)
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: CircleAvatar(
+                                radius: 14,
+                                backgroundColor: theme.colorScheme.primary,
+                                child: Icon(
+                                  Icons.edit_rounded,
+                                  size: 14,
+                                  color: theme.colorScheme.onPrimary,
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                          if (!isGroup && liveIsOnline)
+                            Positioned(
+                              right: 4,
+                              bottom: 4,
+                              child: Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: theme.colorScheme.surface,
+                                    width: 2.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        if (isGroup) ...[
+                          const SizedBox(width: 6),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => EditGroupInfoDialog.show(
+                              context,
+                              conversation: currentConv,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Icon(
+                                Icons.edit_outlined,
+                                size: 18,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(

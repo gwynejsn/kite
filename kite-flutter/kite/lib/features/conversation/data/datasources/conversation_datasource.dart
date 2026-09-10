@@ -137,6 +137,41 @@ class ConversationDatasource {
     }
   }
 
+  Future<Conversation> updateGroupConversationInfo({
+    required String conversationId,
+    String? groupName,
+    String? conversationPhoto,
+  }) async {
+    try {
+      final Map<String, dynamic> body = {
+        'conversationId': conversationId,
+      };
+      if (groupName != null) body['groupName'] = groupName;
+      if (conversationPhoto != null) {
+        body['conversationPhoto'] = conversationPhoto;
+      }
+
+      final response = await dio.post(
+        '/conversation/group/info/update',
+        data: body,
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw AuthenticationException(
+        'Failed to update group information',
+        response.statusCode ?? 500,
+      );
+    } on DioException catch (e) {
+      final message = _extractErrorMessage(
+        e,
+        fallback: 'Failed to update group information',
+      );
+      throw AuthenticationException(message, e.response?.statusCode ?? 0);
+    }
+  }
+
   Future<Conversation> addMembers({
     required String conversationId,
     required List<String> memberIds,
