@@ -362,7 +362,7 @@ public class ConversationService implements ConversationServiceApi {
         if (!conversation.getAdminIds().contains(currentUserId)) {
             throw new UserIsNotAnAdminException("Only admins can do this in members from the group");
         }
-        if (targetMemberId.equals(currentUserId)) {
+        if (targetMemberId != null && targetMemberId.equals(currentUserId)) {
             throw new IllegalArgumentException("Admins cannot do this action to themselves.");
         }
         return conversation;
